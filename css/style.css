@@ -301,148 +301,6 @@ tbody tr:hover { background: #fafafa; }
 .inline-fields input[type="number"] { width: 70px; margin-top: 0; }
 .inline-fields select { flex: 1; margin-top: 0; }
 
-/* --- PULSANTE FLOTTANTE "+" (solo mobile) --- */
-.fab-button { display: none; }
-
-@media (max-width: 800px) {
-  .fab-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    bottom: 22px;
-    right: 18px;
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: white;
-    font-size: 2rem;
-    line-height: 1;
-    border: none;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
-    z-index: 40;
-    cursor: pointer;
-  }
-  .fab-button:active { background: var(--color-primary-dark); }
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 800px) {
-  .app-layout { flex-direction: column; }
-
-  .sidebar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-  .sidebar-logo { display: none; }
-  .sidebar-nav { flex-direction: row; }
-  .nav-item { white-space: nowrap; padding: 10px 14px; }
-  .sidebar-quick-actions { flex-direction: row; margin: 0 0 0 auto; padding: 0; }
-  .sidebar-quick-actions .btn { white-space: nowrap; padding: 10px 12px; font-size: 0.82rem; }
-  .user-bar {
-    margin: 0; padding: 0; flex-shrink: 0;
-    flex-direction: column; align-items: flex-end; gap: 2px;
-  }
-  .user-bar span { display: none; } /* l'email occupa troppo spazio in orizzontale, resta solo "Esci" */
-
-  .main-content { padding: 14px; padding-bottom: 40px; }
-
-  .page-header { flex-wrap: wrap; gap: 10px; }
-  .page-header h1 { font-size: 1.25rem; }
-  .header-actions { flex-wrap: wrap; width: 100%; }
-  .header-actions input[type="month"] { flex: 1; min-width: 140px; }
-  .header-actions .btn { flex: 1; min-width: 140px; }
-
-  .cards-row.two-col { grid-template-columns: 1fr; }
-  /* Budget e obiettivi hanno barre di progresso e testo: restano leggibili
-     solo a colonna singola, anche sotto i 420px dove le altre card
-     (dashboard/conti) passano a 2 colonne. */
-  #budgets-grid, #goals-grid { grid-template-columns: 1fr !important; }
-
-  /* Grafici: altezza massima fissa, altrimenti Chart.js può renderli
-     enormi in verticale su schermi stretti */
-  .chart-card canvas { max-height: 240px; }
-
-  /* Modali a schermo intero: molto più comode da usare col pollice */
-  .modal-overlay { padding: 0; align-items: flex-end; }
-  .modal {
-    max-width: 100%;
-    width: 100%;
-    max-height: 92vh;
-    border-radius: 16px 16px 0 0;
-  }
-
-  /* Touch target più grandi ovunque. Font-size 16px sui campi input è
-     IMPORTANTE: sotto i 16px Safari/iOS zooma automaticamente la pagina
-     quando l'utente tocca il campo, rendendo l'app scomodissima da usare. */
-  .btn { padding: 12px 18px; font-size: 0.95rem; }
-  .btn-icon { padding: 10px 12px; font-size: 1.15rem; }
-  .modal form input, .modal form select, .modal form textarea {
-    padding: 12px;
-    font-size: 16px;
-  }
-  .inline-fields input[type="number"] { width: 80px; }
-
-  /* Tabelle → elenco di card impilate, invece di scroll orizzontale */
-  .table-card { overflow-x: visible; padding: 4px; }
-  table, thead, tbody, th, td, tr { display: block; }
-  thead { display: none; }
-  tbody tr {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    padding: 10px 12px;
-  }
-  tbody tr td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: none;
-    font-size: 0.88rem;
-    gap: 10px;
-  }
-  /* Ogni cella mostra l'etichetta della colonna prima del valore,
-     usando data-label impostato lato JS su ogni <td>. */
-  tbody tr td[data-label]::before {
-    content: attr(data-label);
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    flex-shrink: 0;
-  }
-  tbody tr td:last-child { justify-content: flex-end; gap: 10px; padding-top: 10px; }
-
-  .filters-bar { flex-direction: column; }
-  .filters-bar input, .filters-bar select { width: 100%; font-size: 16px; padding: 12px; }
-
-  .type-toggle-btn { padding: 14px; }
-
-  /* Login: form pieno schermo, campi grandi */
-  .login-box { padding: 24px 20px; }
-  .login-box input { font-size: 16px; padding: 12px; }
-}
-
-@media (max-width: 420px) {
-  .cards-row { grid-template-columns: 1fr 1fr; }
-  .summary-card.total { grid-column: 1 / -1; }
-  .sidebar-quick-actions .btn { font-size: 0.75rem; padding: 10px 8px; }
-}
-
-
 /* --- SIDEBAR QUICK ACTIONS --- */
 .sidebar-quick-actions {
   margin-top: 20px;
@@ -619,3 +477,143 @@ tbody tr:hover { background: #fafafa; }
   cursor: pointer; text-decoration: underline; font-size: 0.78rem; padding: 0;
 }
 
+/* --- PULSANTE FLOTTANTE "+" (solo mobile) --- */
+.fab-button { display: none; }
+
+@media (max-width: 800px) {
+  .fab-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 22px;
+    right: 18px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    font-size: 2rem;
+    line-height: 1;
+    border: none;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+    z-index: 40;
+    cursor: pointer;
+  }
+  .fab-button:active { background: var(--color-primary-dark); }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 800px) {
+  .app-layout { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .sidebar-logo { display: none; }
+  .sidebar-nav { flex-direction: row; }
+  .nav-item { white-space: nowrap; padding: 10px 14px; }
+  .sidebar-quick-actions { flex-direction: row; margin: 0 0 0 auto; padding: 0; }
+  .sidebar-quick-actions .btn { white-space: nowrap; padding: 10px 12px; font-size: 0.82rem; }
+  .user-bar {
+    margin: 0; padding: 0; flex-shrink: 0;
+    flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .user-bar span { display: none; } /* l'email occupa troppo spazio in orizzontale, resta solo "Esci" */
+
+  .main-content { padding: 14px; padding-bottom: 40px; }
+
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header h1 { font-size: 1.25rem; }
+  .header-actions { flex-wrap: wrap; width: 100%; }
+  .header-actions input[type="month"] { flex: 1; min-width: 140px; }
+  .header-actions .btn { flex: 1; min-width: 140px; }
+
+  .cards-row.two-col { grid-template-columns: 1fr; }
+  /* Budget e obiettivi hanno barre di progresso e testo: restano leggibili
+     solo a colonna singola, anche sotto i 420px dove le altre card
+     (dashboard/conti) passano a 2 colonne. */
+  #budgets-grid, #goals-grid { grid-template-columns: 1fr !important; }
+
+  /* Grafici: altezza massima fissa, altrimenti Chart.js può renderli
+     enormi in verticale su schermi stretti */
+  .chart-card canvas { max-height: 240px; }
+
+  /* Modali a schermo intero: molto più comode da usare col pollice */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Touch target più grandi ovunque. Font-size 16px sui campi input è
+     IMPORTANTE: sotto i 16px Safari/iOS zooma automaticamente la pagina
+     quando l'utente tocca il campo, rendendo l'app scomodissima da usare. */
+  .btn { padding: 12px 18px; font-size: 0.95rem; }
+  .btn-icon { padding: 10px 12px; font-size: 1.15rem; }
+  .modal form input, .modal form select, .modal form textarea {
+    padding: 12px;
+    font-size: 16px;
+  }
+  .inline-fields input[type="number"] { width: 80px; }
+
+  /* Tabelle → elenco di card impilate, invece di scroll orizzontale */
+  .table-card { overflow-x: visible; padding: 4px; }
+  table, thead, tbody, th, td, tr { display: block; }
+  thead { display: none; }
+  tbody tr {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+  }
+  tbody tr td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: none;
+    font-size: 0.88rem;
+    gap: 10px;
+  }
+  /* Ogni cella mostra l'etichetta della colonna prima del valore,
+     usando data-label impostato lato JS su ogni <td>. */
+  tbody tr td[data-label]::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  tbody tr td:last-child { justify-content: flex-end; gap: 10px; padding-top: 10px; }
+
+  .filters-bar { flex-direction: column; }
+  .filters-bar input, .filters-bar select { width: 100%; font-size: 16px; padding: 12px; }
+
+  .type-toggle-btn { padding: 14px; }
+
+  /* Login: form pieno schermo, campi grandi */
+  .login-box { padding: 24px 20px; }
+  .login-box input { font-size: 16px; padding: 12px; }
+}
+
+@media (max-width: 420px) {
+  .cards-row { grid-template-columns: 1fr 1fr; }
+  .summary-card.total { grid-column: 1 / -1; }
+  .sidebar-quick-actions .btn { font-size: 0.75rem; padding: 10px 8px; }
+}
