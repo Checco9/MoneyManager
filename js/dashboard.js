@@ -17,8 +17,17 @@ async function initDashboardPage() {
 
     renderDashSummary(wealth, monthSummary);
     renderDashRecent(recentTx.slice(0, 8));
-    renderDashFlowChart(trend);
-    renderDashAccountsChart(wealth.accounts);
+
+    // I grafici dipendono da una libreria esterna (Chart.js) caricata da
+    // CDN: se per qualunque motivo non si carica (rete lenta, CDN
+    // temporaneamente giù), non deve bloccare il resto della dashboard,
+    // che è già utile anche senza grafici.
+    if (typeof Chart === 'undefined') {
+      showToast('I grafici non si sono caricati (problema di rete). Il resto della dashboard funziona normalmente.', 'error');
+    } else {
+      try { renderDashFlowChart(trend); } catch (e) { console.warn('Grafico entrate/uscite non renderizzato:', e); }
+      try { renderDashAccountsChart(wealth.accounts); } catch (e) { console.warn('Grafico distribuzione conti non renderizzato:', e); }
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }
