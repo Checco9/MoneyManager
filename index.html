@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Money Manager</title>
+
+  <!-- Icona e installabilità come app (Windows: "Installa app" dal browser;
+       Android: "Aggiungi a schermata Home") -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#4f46e5" />
+
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- SCHERMATA DI LOGIN -->
+  <div id="login-screen" class="login-screen" hidden>
+    <div class="login-box">
+      <h1>💰 Money Manager</h1>
+      <p class="muted-text">Accedi per vedere i tuoi dati.</p>
+      <form id="login-form">
+        <div id="login-error" class="login-error"></div>
+        <label>Email <input type="email" id="login-email" required autocomplete="username" /></label>
+        <label>Password <input type="password" id="login-password" required autocomplete="current-password" /></label>
+        <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-layout" hidden>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">💰 Money Manager</div>
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item" data-page="dashboard">📊 Dashboard</a>
+        <a href="#accounts" class="nav-item" data-page="accounts">🏦 Conti</a>
+        <a href="#transactions" class="nav-item" data-page="transactions">💳 Transazioni</a>
+        <a href="#transfers" class="nav-item" data-page="transfers">↔ Giroconti</a>
+        <a href="#budgets" class="nav-item" data-page="budgets">🎯 Budget</a>
+        <a href="#goals" class="nav-item" data-page="goals">🏆 Obiettivi</a>
+        <a href="#recurring" class="nav-item" data-page="recurring">🔁 Ricorrenti</a>
+        <a href="#investments" class="nav-item" data-page="investments">📈 Investimenti</a>
+        <a href="#statistics" class="nav-item" data-page="statistics">📉 Statistiche</a>
+        <a href="#categories" class="nav-item" data-page="categories">🏷️ Categorie</a>
+        <a href="#settings" class="nav-item" data-page="settings">⚙️ Impostazioni</a>
+      </nav>
+      <div class="sidebar-quick-actions">
+        <button id="quick-add-expense" class="btn btn-primary btn-block">+ Nuova transazione</button>
+        <button id="quick-add-transfer" class="btn btn-secondary btn-block">↔ Giroconto</button>
+      </div>
+      <div class="user-bar">
+        <span id="user-email"></span>
+        <button id="btn-logout">Esci</button>
+      </div>
+    </aside>
+
+    <!-- CONTENUTO PRINCIPALE -->
+    <main class="main-content">
+
+      <!-- DASHBOARD -->
+      <section id="page-dashboard" class="page">
+        <header class="page-header"><h1>Dashboard</h1></header>
+        <div id="dash-summary" class="cards-row"></div>
+        <div class="cards-row two-col">
+          <div class="table-card chart-card">
+            <h3>Entrate / Uscite (ultimi 6 mesi)</h3>
+            <canvas id="dash-chart-flow"></canvas>
+          </div>
+          <div class="table-card chart-card">
+            <h3>Distribuzione patrimonio tra i conti</h3>
+            <canvas id="dash-chart-accounts"></canvas>
+          </div>
+        </div>
+        <div class="table-card">
+          <h3>Ultime transazioni</h3>
+          <table><tbody id="dash-recent-tx"></tbody></table>
+        </div>
+      </section>
+
+      <!-- CONTI -->
+      <section id="page-accounts" class="page" hidden>
+        <header class="page-header">
+          <h1>Gestione conti</h1>
+          <button id="btn-new-account" class="btn btn-primary">+ Nuovo conto</button>
+        </header>
+        <section id="accounts-summary" class="cards-row"></section>
+        <section class="table-card">
+          <table id="accounts-table">
+            <thead><tr><th></th><th>Nome</th><th>Tipo</th><th>Saldo iniziale</th><th>Saldo attuale</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="accounts-table-body"></tbody>
+          </table>
+          <p id="accounts-empty-state" class="empty-state" hidden>Non hai ancora nessun conto. Crea il primo con "+ Nuovo conto".</p>
+        </section>
+      </section>
+
+      <!-- TRANSAZIONI -->
+      <section id="page-transactions" class="page" hidden>
+        <header class="page-header">
+          <h1>Transazioni</h1>
+          <button id="btn-new-transaction" class="btn btn-primary">+ Nuova transazione</button>
+        </header>
+
+        <section class="filters-bar">
+          <input type="text" id="tx-search" placeholder="Cerca per descrizione o note..." />
+          <select id="tx-filter-account"><option value="">Tutti i conti</option></select>
+          <select id="tx-filter-category"><option value="">Tutte le categorie</option></select>
+          <select id="tx-filter-type">
+            <option value="">Entrate e uscite</option>
+            <option value="income">Solo entrate</option>
+            <option value="expense">Solo uscite</option>
+          </select>
+          <input type="date" id="tx-filter-from" title="Da data" />
+          <input type="date" id="tx-filter-to" title="A data" />
+          <select id="tx-sort">
+            <option value="date_desc">Più recenti</option>
+            <option value="date_asc">Più vecchie</option>
+            <option value="amount_desc">Importo maggiore</option>
+            <option value="amount_asc">Importo minore</option>
+          </select>
+        </section>
+
+        <section class="table-card">
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Conto</th><th>Categoria</th><th>Descrizione</th><th>Importo</th><th></th></tr></thead>
+            <tbody id="tx-table-body"></tbody>
+          </table>
+          <p id="tx-empty-state" class="empty-state" hidden>Nessuna transazione trovata con questi filtri.</p>
+        </section>
+      </section>
+
+      <!-- GIROCONTI -->
+      <section id="page-transfers" class="page" hidden>
+        <header class="page-header">
+          <h1>Giroconti</h1>
+          <button id="btn-new-transfer" class="btn btn-primary">+ Nuovo giroconto</button>
+        </header>
+        <section class="table-card">
+          <table>
+            <thead><tr><th>Data</th><th>Da</th><th>A</th><th>Importo</th><th>Descrizione</th><th></th></tr></thead>
+            <tbody id="transfers-table-body"></tbody>
+          </table>
+          <p id="transfers-empty-state" class="empty-state" hidden>Nessun giroconto registrato.</p>
+        </section>
+      </section>
+
+      <!-- BUDGET -->
+      <section id="page-budgets" class="page" hidden>
+        <header class="page-header">
+          <h1>Budget</h1>
+          <div class="header-actions">
+            <input type="month" id="budget-month-picker" />
+            <button id="btn-new-budget" class="btn btn-primary">+ Imposta budget</button>
+          </div>
+        </header>
+        <div id="budgets-grid" class="cards-row"></div>
+        <p id="budgets-empty-state" class="empty-state" hidden>Nessun budget impostato per questo mese.</p>
+      </section>
+
+      <!-- OBIETTIVI -->
+      <section id="page-goals" class="page" hidden>
+        <header class="page-header">
+          <h1>Obiettivi di risparmio</h1>
+          <button id="btn-new-goal" class="btn btn-primary">+ Nuovo obiettivo</button>
+        </header>
+        <div id="goals-grid" class="cards-row"></div>
+        <p id="goals-empty-state" class="empty-state" hidden>Nessun obiettivo creato ancora.</p>
+      </section>
+
+      <!-- RICORRENTI + SCADENZE -->
+      <section id="page-recurring" class="page" hidden>
+        <header class="page-header">
+          <h1>Transazioni ricorrenti e scadenze</h1>
+          <div class="header-actions">
+            <button id="btn-generate-recurring" class="btn btn-secondary">🔄 Genera dovuti</button>
+            <button id="btn-new-recurring" class="btn btn-primary">+ Nuovo ricorrente</button>
+          </div>
+        </header>
+
+        <div class="table-card">
+          <h3>Movimenti ricorrenti</h3>
+          <table>
+            <thead><tr><th>Descrizione</th><th>Importo</th><th>Frequenza</th><th>Prossima data</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="recurring-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="table-card">
+          <h3>Prossime scadenze (30 giorni)</h3>
+          <table>
+            <thead><tr><th>Data</th><th>Descrizione</th><th>Importo</th></tr></thead>
+            <tbody id="upcoming-table-body"></tbody>
+          </table>
+          <p id="upcoming-empty-state" class="empty-state" hidden>Nessuna scadenza nei prossimi 30 giorni.</p>
+        </div>
+      </section>
+
+      <!-- INVESTIMENTI -->
+      <section id="page-investments" class="page" hidden>
+        <header class="page-header">
+          <h1>Investimenti</h1>
+          <button id="btn-new-investment" class="btn btn-primary">+ Nuovo investimento</button>
+        </header>
+        <section class="table-card">
+          <table>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Capitale</th><th>Valore attuale</th><th>Rendimento</th><th></th></tr></thead>
+            <tbody id="investments-table-body"></tbody>
+          </table>
+          <p id="investments-empty-state" class="empty-state" hidden>Nessun investimento registrato.</p>
+        </section>
+      </section>
+
+      <!-- STATISTICHE -->
+      <section id="page-statistics" class="page" hidden>
+        <header class="page-header"><h1>Statistiche</h1></header>
+        <div class="cards-row two-col">
+          <div class="table-card chart-card">
+            <h3>Andamento entrate/uscite/risparmio</h3>
+            <canvas id="stats-chart-trend"></canvas>
+          </div>
+          <div class="table-card chart-card">
+            <h3>Andamento del patrimonio</h3>
+            <canvas id="stats-chart-wealth"></canvas>
+          </div>
+        </div>
+        <div class="cards-row two-col">
+          <div class="table-card chart-card">
+            <h3>Uscite per categoria (mese corrente)</h3>
+            <canvas id="stats-chart-expense-cat"></canvas>
+          </div>
+          <div class="table-card chart-card">
+            <h3>Entrate per categoria (mese corrente)</h3>
+            <canvas id="stats-chart-income-cat"></canvas>
+          </div>
+        </div>
+        <div id="stats-insights" class="cards-row"></div>
+      </section>
+
+      <!-- CATEGORIE -->
+      <section id="page-categories" class="page" hidden>
+        <header class="page-header">
+          <h1>Categorie</h1>
+          <button id="btn-new-category" class="btn btn-primary">+ Nuova categoria</button>
+        </header>
+        <div class="cards-row two-col">
+          <div class="table-card">
+            <h3>Entrate</h3>
+            <ul class="category-list" id="categories-income-list"></ul>
+          </div>
+          <div class="table-card">
+            <h3>Uscite</h3>
+            <ul class="category-list" id="categories-expense-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- IMPOSTAZIONI / BACKUP -->
+      <section id="page-settings" class="page" hidden>
+        <header class="page-header"><h1>Impostazioni e backup</h1></header>
+        <div class="table-card">
+          <h3>Backup</h3>
+          <p class="muted-text">Esporta tutti i tuoi dati o ripristina un backup precedente. L'importazione sostituisce completamente i dati attuali: verrà chiesta conferma.</p>
+          <div class="settings-actions">
+            <button id="btn-export-json" class="btn btn-secondary">⬇ Esporta backup (JSON)</button>
+            <button id="btn-export-csv" class="btn btn-secondary">⬇ Esporta transazioni (CSV)</button>
+            <label class="btn btn-secondary file-btn">
+              ⬆ Importa backup
+              <input type="file" id="import-file-input" accept="application/json" hidden />
+            </label>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Pulsante flottante "+ Nuova transazione": visibile SOLO su mobile
+         (vedi CSS), fisso in basso a destra su ogni pagina, per rendere
+         l'inserimento rapido sempre a portata di pollice senza dover
+         cercare il pulsante nella sidebar orizzontale scorrevole. -->
+    <button id="fab-new-transaction" class="fab-button" aria-label="Nuova transazione" title="Nuova transazione">+</button>
+  </div>
+
+  <!-- ===== MODALI ===== -->
+
+  <div id="account-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="account-modal-title">Nuovo conto</h2>
+      <form id="account-form">
+        <input type="hidden" id="account-id" />
+        <label>Nome <input type="text" id="account-name" placeholder="Es. Postepay" required /></label>
+        <label>Tipo
+          <select id="account-type" required>
+            <option value="contanti">Contanti</option>
+            <option value="conto_corrente">Conto corrente</option>
+            <option value="carta">Carta</option>
+            <option value="poste">Poste</option>
+            <option value="postepay">Postepay</option>
+            <option value="paypal">PayPal</option>
+            <option value="investimenti">Investimenti</option>
+            <option value="altro">Altro</option>
+          </select>
+        </label>
+        <label>Saldo iniziale (€) <input type="number" id="account-initial-balance" step="0.01" placeholder="0.00" required /></label>
+        <label>Data di apertura <input type="date" id="account-opening-date" /></label>
+        <label>Colore <input type="color" id="account-color" value="#4f46e5" /></label>
+        <label>Icona (emoji) <input type="text" id="account-icon" placeholder="💰" maxlength="4" /></label>
+        <label>Note <textarea id="account-notes" rows="2" placeholder="Opzionale"></textarea></label>
+        <label class="checkbox-label"><input type="checkbox" id="account-active" checked /> Conto attivo</label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="account-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="transaction-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="transaction-modal-title">Nuova transazione</h2>
+      <form id="transaction-form">
+        <input type="hidden" id="tx-id" />
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn active" data-type="expense" id="tx-type-expense">− Uscita</button>
+          <button type="button" class="type-toggle-btn" data-type="income" id="tx-type-income">+ Entrata</button>
+        </div>
+        <input type="hidden" id="tx-type" value="expense" />
+        <label>Importo (€) <input type="number" id="tx-amount" step="0.01" min="0.01" required /></label>
+        <label>Data <input type="date" id="tx-date" required /></label>
+        <label>Ora (opzionale) <input type="time" id="tx-time" /></label>
+        <label>Conto <select id="tx-account" required></select></label>
+        <label>Categoria <select id="tx-category"></select></label>
+        <label>Sottocategoria (opzionale) <input type="text" id="tx-subcategory" /></label>
+        <label>Descrizione <input type="text" id="tx-description" placeholder="Es. Cena, Benzina..." /></label>
+        <label>Note <textarea id="tx-notes" rows="2"></textarea></label>
+        <label>Tag (separati da virgola) <input type="text" id="tx-tags" placeholder="es. lavoro, viaggio" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="transaction-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="transfer-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="transfer-modal-title">Nuovo giroconto</h2>
+      <form id="transfer-form">
+        <input type="hidden" id="transfer-id" />
+        <label>Conto di origine <select id="transfer-from" required></select></label>
+        <label>Conto di destinazione <select id="transfer-to" required></select></label>
+        <label>Importo (€) <input type="number" id="transfer-amount" step="0.01" min="0.01" required /></label>
+        <label>Data <input type="date" id="transfer-date" required /></label>
+        <label>Descrizione <input type="text" id="transfer-description" placeholder="Opzionale" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="transfer-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="budget-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2>Imposta budget</h2>
+      <form id="budget-form">
+        <label>Categoria <select id="budget-category" required></select></label>
+        <label>Mese <input type="month" id="budget-month" required /></label>
+        <label>Importo budget (€) <input type="number" id="budget-amount" step="0.01" min="0" required /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="budget-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="goal-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="goal-modal-title">Nuovo obiettivo</h2>
+      <form id="goal-form">
+        <input type="hidden" id="goal-id" />
+        <label>Nome <input type="text" id="goal-name" placeholder="Es. Nuova moto" required /></label>
+        <label>Importo obiettivo (€) <input type="number" id="goal-target" step="0.01" min="0.01" required /></label>
+        <label>Data obiettivo (opzionale) <input type="date" id="goal-date" /></label>
+        <label>Icona (emoji) <input type="text" id="goal-icon" placeholder="🎯" maxlength="4" /></label>
+        <label>Descrizione <textarea id="goal-description" rows="2"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="goal-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="goal-contribute-modal" class="modal-overlay" hidden>
+    <div class="modal modal-small">
+      <h2 id="goal-contribute-title">Aggiungi denaro all'obiettivo</h2>
+      <form id="goal-contribute-form">
+        <input type="hidden" id="goal-contribute-id" />
+        <input type="hidden" id="goal-contribute-direction" value="add" />
+        <label>Conto da cui accantonare <select id="goal-contribute-account" required></select></label>
+        <label>Importo (€) <input type="number" id="goal-contribute-amount" step="0.01" min="0.01" required /></label>
+        <label>Nota <input type="text" id="goal-contribute-note" placeholder="Opzionale" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="goal-contribute-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Conferma</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="recurring-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="recurring-modal-title">Nuovo movimento ricorrente</h2>
+      <form id="recurring-form">
+        <input type="hidden" id="recurring-id" />
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn active" data-type="expense" id="recurring-type-expense">− Uscita</button>
+          <button type="button" class="type-toggle-btn" data-type="income" id="recurring-type-income">+ Entrata</button>
+        </div>
+        <input type="hidden" id="recurring-type" value="expense" />
+        <label>Descrizione <input type="text" id="recurring-description" placeholder="Es. Netflix" required /></label>
+        <label>Importo (€) <input type="number" id="recurring-amount" step="0.01" min="0.01" required /></label>
+        <label>Conto <select id="recurring-account" required></select></label>
+        <label>Categoria <select id="recurring-category"></select></label>
+        <label>Frequenza
+          <div class="inline-fields">
+            <span class="inline-fields-label">Ogni</span>
+            <input type="number" id="recurring-every-n" min="1" value="1" required />
+            <select id="recurring-frequency" required>
+              <option value="daily">giorno/i</option>
+              <option value="weekly">settimana/e</option>
+              <option value="monthly" selected>mese/i</option>
+              <option value="yearly">anno/i</option>
+            </select>
+          </div>
+        </label>
+        <label>Data di inizio <input type="date" id="recurring-start" required /></label>
+        <label>Data di fine (opzionale) <input type="date" id="recurring-end" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="recurring-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="investment-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="investment-modal-title">Nuovo investimento</h2>
+      <form id="investment-form">
+        <input type="hidden" id="investment-id" />
+        <label>Nome <input type="text" id="investment-name" placeholder="Es. ETF MSCI World" required /></label>
+        <label>Tipo
+          <select id="investment-type" required>
+            <option>BTP</option><option>BOT</option><option>ETF</option>
+            <option>Azioni</option><option>Obbligazioni</option><option>Altro</option>
+          </select>
+        </label>
+        <label>Capitale investito (€) <input type="number" id="investment-capital" step="0.01" min="0" required /></label>
+        <label>Valore attuale (€) <input type="number" id="investment-current-value" step="0.01" min="0" required /></label>
+        <label>Data <input type="date" id="investment-date" /></label>
+        <label>Note <textarea id="investment-notes" rows="2"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="investment-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="category-modal" class="modal-overlay" hidden>
+    <div class="modal modal-small">
+      <h2 id="category-modal-title">Nuova categoria</h2>
+      <form id="category-form">
+        <input type="hidden" id="category-id" />
+        <label>Nome <input type="text" id="category-name" required /></label>
+        <label>Tipo
+          <select id="category-type" required>
+            <option value="expense">Uscita</option>
+            <option value="income">Entrata</option>
+          </select>
+        </label>
+        <label>Icona (emoji) <input type="text" id="category-icon" placeholder="❓" maxlength="4" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="category-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="confirm-modal" class="modal-overlay" hidden>
+    <div class="modal modal-small">
+      <h2 id="confirm-modal-title">Conferma</h2>
+      <p id="confirm-modal-text">Sei sicuro?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close-modal="confirm-modal">Annulla</button>
+        <button type="button" id="btn-confirm-action" class="btn btn-danger">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Utility di base -->
+  <script src="js/app.js"></script>
+  <!-- Connessione Supabase e layer dati -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/calculations.js"></script>
+  <script src="js/recurring-engine.js"></script>
+  <!-- Router SPA -->
+  <script src="js/router.js"></script>
+  <!-- Pagine -->
+  <script src="js/dashboard.js"></script>
+  <script src="js/accounts.js"></script>
+  <script src="js/transactions.js"></script>
+  <script src="js/transfers.js"></script>
+  <script src="js/budgets.js"></script>
+  <script src="js/goals.js"></script>
+  <script src="js/recurring.js"></script>
+  <script src="js/investments.js"></script>
+  <script src="js/statistics.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/settings.js"></script>
+  <!-- Login/logout + avvio app (deve stare per ultimo) -->
+  <script src="js/auth.js"></script>
+</body>
+</html>
