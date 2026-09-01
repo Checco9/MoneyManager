@@ -18,11 +18,16 @@ async function initStatisticsPage() {
       calc.computeCategoryTotals(month, 'income')
     ]);
 
-    renderTrendChart(trend);
-    renderWealthChart(wealth);
-    renderCategoryChart('stats-chart-expense-cat', expenseCat, (c) => statsExpenseCatChart = c, statsExpenseCatChart);
-    renderCategoryChart('stats-chart-income-cat', incomeCat, (c) => statsIncomeCatChart = c, statsIncomeCatChart);
     renderInsights(trend, expenseCat);
+
+    if (typeof Chart === 'undefined') {
+      showToast('I grafici non si sono caricati (problema di rete).', 'error');
+      return;
+    }
+    try { renderTrendChart(trend); } catch (e) { console.warn(e); }
+    try { renderWealthChart(wealth); } catch (e) { console.warn(e); }
+    try { renderCategoryChart('stats-chart-expense-cat', expenseCat, (c) => statsExpenseCatChart = c, statsExpenseCatChart); } catch (e) { console.warn(e); }
+    try { renderCategoryChart('stats-chart-income-cat', incomeCat, (c) => statsIncomeCatChart = c, statsIncomeCatChart); } catch (e) { console.warn(e); }
   } catch (err) {
     showToast(err.message, 'error');
   }
