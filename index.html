@@ -216,6 +216,88 @@
         </section>
       </section>
 
+      <!-- DETTAGLIO INVESTIMENTO -->
+      <section id="page-investment-detail" class="page" hidden>
+        <header class="page-header">
+          <div>
+            <button id="btn-back-to-investments" class="btn btn-secondary btn-small">← Torna agli investimenti</button>
+            <h1 id="detail-investment-name" style="margin-top:10px">Investimento</h1>
+          </div>
+          <div class="header-actions">
+            <button id="btn-new-movement" class="btn btn-secondary">↕ Versamento/Prelievo</button>
+            <button id="btn-new-valuation" class="btn btn-primary">+ Nuova rilevazione</button>
+          </div>
+        </header>
+
+        <div id="detail-summary" class="cards-row"></div>
+
+        <div class="table-card">
+          <h3>Analisi</h3>
+          <ul id="detail-insights" class="insights-list"></ul>
+        </div>
+
+        <div id="detail-inflation-card" class="table-card">
+          <h3>Rendimento reale (al netto dell'inflazione)</h3>
+          <p class="muted-text">Inserisci manualmente l'inflazione cumulata dall'inizio dell'investimento (dato pubblico, es. da ISTAT) per calcolare quanto hai guadagnato davvero in potere d'acquisto.</p>
+          <div class="inline-fields">
+            <input type="number" id="detail-inflation-input" step="0.1" placeholder="es. 6.5" style="max-width:120px" />
+            <span class="inline-fields-label">% di inflazione cumulata</span>
+          </div>
+          <p id="detail-real-return-result" class="muted-text"></p>
+        </div>
+
+        <div id="detail-composition-section" class="cards-row two-col" hidden>
+          <div class="table-card chart-card">
+            <h3>Composizione attuale</h3>
+            <canvas id="detail-chart-composition"></canvas>
+          </div>
+          <div class="table-card chart-card">
+            <h3>Composizione nel tempo</h3>
+            <canvas id="detail-chart-composition-time"></canvas>
+          </div>
+        </div>
+
+        <div class="cards-row two-col">
+          <div class="table-card chart-card">
+            <h3>Valore nel tempo</h3>
+            <canvas id="detail-chart-value"></canvas>
+          </div>
+          <div class="table-card chart-card">
+            <h3>Capitale versato vs valore attuale</h3>
+            <canvas id="detail-chart-capital-vs-value"></canvas>
+          </div>
+        </div>
+
+        <div class="cards-row two-col">
+          <div class="table-card chart-card" id="detail-mwrr-card" hidden>
+            <h3>MWRR nel tempo</h3>
+            <canvas id="detail-chart-mwrr"></canvas>
+          </div>
+          <div class="table-card chart-card" id="detail-costs-card" hidden>
+            <h3>Costi cumulativi</h3>
+            <canvas id="detail-chart-costs"></canvas>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>Storico rilevazioni</h3>
+          <table>
+            <thead><tr><th>Data</th><th>Valore</th><th>MWRR</th><th>Composizione</th><th>Fonte</th><th></th></tr></thead>
+            <tbody id="detail-valuations-table-body"></tbody>
+          </table>
+          <p id="detail-valuations-empty" class="empty-state" hidden>Nessuna rilevazione ancora. Aggiungine una con "+ Nuova rilevazione".</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Versamenti e prelievi</h3>
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Importo</th><th>Note</th><th></th></tr></thead>
+            <tbody id="detail-movements-table-body"></tbody>
+          </table>
+          <p id="detail-movements-empty" class="empty-state" hidden>Nessun versamento o prelievo aggiuntivo registrato.</p>
+        </div>
+      </section>
+
       <!-- STATISTICHE -->
       <section id="page-statistics" class="page" hidden>
         <header class="page-header"><h1>Statistiche</h1></header>
@@ -460,7 +542,8 @@
         <label>Tipo
           <select id="investment-type" required>
             <option>BTP</option><option>BOT</option><option>ETF</option>
-            <option>Azioni</option><option>Obbligazioni</option><option>Altro</option>
+            <option>Azioni</option><option>Obbligazioni</option>
+            <option>Polizza</option><option>Conto Deposito</option><option>Altro</option>
           </select>
         </label>
         <label>Capitale investito (€) <input type="number" id="investment-capital" step="0.01" min="0" required /></label>
@@ -469,6 +552,63 @@
         <label>Note <textarea id="investment-notes" rows="2"></textarea></label>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" data-close-modal="investment-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rilevazione investimento -->
+  <div id="valuation-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="valuation-modal-title">Nuova rilevazione</h2>
+      <form id="valuation-form">
+        <input type="hidden" id="valuation-id" />
+        <input type="hidden" id="valuation-investment-id" />
+        <label>Data della rilevazione <input type="date" id="valuation-date" required /></label>
+        <label>Valore complessivo (€) <input type="number" id="valuation-total-value" step="0.01" min="0" required /></label>
+        <label>MWRR (%, opzionale) <input type="number" id="valuation-mwrr" step="0.01" placeholder="es. -1.99" /></label>
+        <label>Valore di riscatto (€, opzionale, se diverso) <input type="number" id="valuation-redemption-value" step="0.01" min="0" /></label>
+        <label>Costi noti cumulativi (€, opzionale) <input type="number" id="valuation-costs" step="0.01" min="0" /></label>
+
+        <p class="muted-text" style="margin-bottom:6px">Composizione (opzionale — lascia vuoto se non applicabile, es. per ETF/BTP)</p>
+        <div id="valuation-composition-rows"></div>
+        <button type="button" id="btn-add-composition-row" class="btn btn-secondary btn-small" style="margin-bottom:14px">+ Aggiungi componente</button>
+
+        <label>Fonte del dato
+          <select id="valuation-source">
+            <option value="manual">Inserito manualmente</option>
+            <option value="automatic">Raccolto automaticamente</option>
+            <option value="calculated">Calcolato dal programma</option>
+            <option value="estimate">Stima</option>
+          </select>
+        </label>
+        <label>Note <textarea id="valuation-notes" rows="2"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="valuation-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Versamento/Prelievo investimento -->
+  <div id="movement-modal" class="modal-overlay" hidden>
+    <div class="modal modal-small">
+      <h2 id="movement-modal-title">Versamento o prelievo</h2>
+      <form id="movement-form">
+        <input type="hidden" id="movement-id" />
+        <input type="hidden" id="movement-investment-id" />
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn active" data-type="deposit" id="movement-type-deposit">+ Versamento</button>
+          <button type="button" class="type-toggle-btn" data-type="withdrawal" id="movement-type-withdrawal">− Prelievo</button>
+        </div>
+        <input type="hidden" id="movement-type" value="deposit" />
+        <label>Data <input type="date" id="movement-date" required /></label>
+        <label>Importo (€) <input type="number" id="movement-amount" step="0.01" min="0.01" required /></label>
+        <label>Note <input type="text" id="movement-notes" placeholder="Opzionale" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="movement-modal">Annulla</button>
           <button type="submit" class="btn btn-primary">Salva</button>
         </div>
       </form>
@@ -513,6 +653,7 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/db.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/investment-calculations.js"></script>
   <script src="js/recurring-engine.js"></script>
   <!-- Router SPA -->
   <script src="js/router.js"></script>
@@ -525,6 +666,7 @@
   <script src="js/goals.js"></script>
   <script src="js/recurring.js"></script>
   <script src="js/investments.js"></script>
+  <script src="js/investment-detail.js"></script>
   <script src="js/statistics.js"></script>
   <script src="js/categories.js"></script>
   <script src="js/settings.js"></script>
