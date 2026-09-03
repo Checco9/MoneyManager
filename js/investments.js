@@ -4,6 +4,7 @@
  */
 
 let investmentsPageBound = false;
+let allInvestmentsCache = [];
 
 async function initInvestmentsPage() {
   bindInvestmentsPageEvents();
@@ -13,7 +14,23 @@ async function initInvestmentsPage() {
 async function loadInvestments() {
   try {
     const list = await db.investments.list();
-    renderInvestmentsTable(list);
+    // Per ogni investimento, se esistono rilevazioni storiche uso quelle
+    // per capitale/valore/rendimento invece dei vecchi campi statici,
+    // mantenendo comunque la retrocompatibilità per chi non ne ha ancora.
+    const enriched = await Promise.all(list.map(async (inv) => {
+      const [movements, valuations] = await Promise.all([
+        db.investmentMovements.listForInvestment(inv.id),
+        db.investmentValuations.listForInvestment(inv.id)
+      ]);
+      const hasHistory = valuations.length > 0;
+      const capital = hasHistory ? investmentCalc.computeCapitalPaidIn(inv, movements) : inv.capital;
+      const currentValue = hasHistory ? investmentCalc.getCurrentValue(inv, valuations) : inv.currentValue;
+      const absoluteReturn = currentValue - capital;
+      const percentReturn = capital > 0 ? Math.round((absoluteReturn / capital) * 1000) / 10 : 0;
+      return { ...inv, capital, currentValue, absoluteReturn, percentReturn, hasHistory };
+    }));
+    allInvestmentsCache = enriched;
+    renderInvestmentsTable(enriched);
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -34,12 +51,13 @@ function renderInvestmentsTable(list) {
       const cls = i.absoluteReturn >= 0 ? 'balance-positive' : 'balance-negative';
       const sign = i.absoluteReturn >= 0 ? '+' : '';
       return `<tr>
-        <td data-label="Nome">${escapeHtml(i.name)}</td>
+        <td data-label="Nome">${escapeHtml(i.name)}${i.hasHistory ? ' <span class="status-pill status-active" title="Ha uno storico rilevazioni">storico</span>' : ''}</td>
         <td data-label="Tipo">${i.type}</td>
         <td data-label="Capitale">${formatMoney(i.capital)}</td>
         <td data-label="Valore attuale">${formatMoney(i.currentValue)}</td>
         <td data-label="Rendimento" class="${cls}">${sign}${formatMoney(i.absoluteReturn)} (${sign}${i.percentReturn}%)</td>
         <td>
+          <button class="btn-icon" title="Dettagli e storico" onclick="openInvestmentDetail('${i.id}')">📊</button>
           <button class="btn-icon" title="Modifica" onclick="openEditInvestment('${i.id}')">✏️</button>
           <button class="btn-icon" title="Elimina" onclick="askDeleteInvestment('${i.id}')">🗑️</button>
         </td>
@@ -73,7 +91,12 @@ function openEditInvestment(id) {
 }
 
 function askDeleteInvestment(id) {
-  confirmAction('Eliminare questo investimento?', async () => {
+  const inv = allInvestmentsCache.find((i) => i.id === id);
+  const warning = inv && inv.hasHistory
+    ? `Eliminare "${inv.name}"? Verranno cancellate ANCHE tutte le rilevazioni e i movimenti storici collegati. L'operazione non è reversibile.`
+    : 'Eliminare questo investimento?';
+
+  confirmAction(warning, async () => {
     try {
       await db.investments.remove(id);
       showToast('Investimento eliminato.', 'success');
@@ -81,7 +104,7 @@ function askDeleteInvestment(id) {
     } catch (err) {
       showToast(err.message, 'error');
     }
-  });
+  }, 'Conferma eliminazione');
 }
 
 function bindInvestmentsPageEvents() {

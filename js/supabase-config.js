@@ -13,7 +13,7 @@
  * che blocca chiunque non abbia fatto login.
  */
 
-const SUPABASE_URL = 'https://ehfmzbbysjffsbfxdkey.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_mazElwmm0yEhYKRzp2wNJg_E2zllWnB';
+const SUPABASE_URL = 'INCOLLA_QUI_IL_TUO_PROJECT_URL';
+const SUPABASE_ANON_KEY = 'INCOLLA_QUI_LA_TUA_ANON_KEY';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

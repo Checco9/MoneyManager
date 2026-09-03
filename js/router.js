@@ -9,7 +9,7 @@
 
 const PAGES = [
   'dashboard', 'accounts', 'transactions', 'transfers', 'budgets',
-  'goals', 'recurring', 'investments', 'statistics', 'categories', 'settings'
+  'goals', 'recurring', 'investments', 'investment-detail', 'statistics', 'categories', 'settings'
 ];
 
 const PAGE_INIT_FUNCTIONS = {
@@ -21,6 +21,7 @@ const PAGE_INIT_FUNCTIONS = {
   goals: () => window.initGoalsPage && window.initGoalsPage(),
   recurring: () => window.initRecurringPage && window.initRecurringPage(),
   investments: () => window.initInvestmentsPage && window.initInvestmentsPage(),
+  'investment-detail': () => window.initInvestmentDetailPage && window.initInvestmentDetailPage(),
   statistics: () => window.initStatisticsPage && window.initStatisticsPage(),
   categories: () => window.initCategoriesPage && window.initCategoriesPage(),
   settings: () => window.initSettingsPage && window.initSettingsPage()

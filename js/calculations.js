@@ -54,7 +54,10 @@ async function computeWealthBreakdown(upToDate = null) {
   const investmentAccountsTotal = investmentAccounts.reduce((s, a) => s + a.currentBalance, 0);
 
   const investmentsList = await db.investments.list();
-  const investmentsTotal = investmentsList.reduce((s, i) => s + i.currentValue, 0);
+  const investmentValues = await Promise.all(
+    investmentsList.map((i) => investmentCalc.getEffectiveValue(i.id, i.currentValue, upToDate))
+  );
+  const investmentsTotal = investmentValues.reduce((s, v) => s + v, 0);
 
   const investments = investmentAccountsTotal + investmentsTotal;
   return { total: liquidity + investments, liquidity, investments, accounts };

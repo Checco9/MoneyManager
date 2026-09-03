@@ -124,11 +124,44 @@ create table recurring_transactions (
 create table investments (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  type text not null check (type in ('BTP','BOT','ETF','Azioni','Obbligazioni','Altro')),
+  type text not null check (type in ('BTP','BOT','ETF','Azioni','Obbligazioni','Polizza','Conto Deposito','Altro')),
   capital integer not null default 0,
   current_value integer not null default 0,
   date date,
   notes text default ''
+);
+
+-- Storico rilevazioni: una riga = una "fotografia" nel tempo. Vedi
+-- sql/migration-investment-tracking.sql per la spiegazione dettagliata
+-- di ogni campo (chi parte da zero non ha bisogno della migrazione,
+-- ha già tutto qui).
+create table investment_valuations (
+  id uuid primary key default gen_random_uuid(),
+  investment_id uuid not null references investments(id) on delete cascade,
+  date date not null,
+  total_value integer not null,
+  redemption_value integer,
+  mwrr numeric(7,3),
+  composition jsonb,
+  costs integer,
+  data_source text not null default 'manual'
+    check (data_source in ('manual','automatic','calculated','estimate')),
+  source_note text default '',
+  notes text default '',
+  created_at timestamptz not null default now(),
+  unique (investment_id, date)
+);
+
+-- Versamenti e prelievi successivi al capitale iniziale, distinti
+-- dalle rilevazioni (che fotografano il valore, non un movimento).
+create table investment_movements (
+  id uuid primary key default gen_random_uuid(),
+  investment_id uuid not null references investments(id) on delete cascade,
+  date date not null,
+  amount integer not null check (amount > 0),
+  type text not null check (type in ('deposit','withdrawal')),
+  notes text default '',
+  created_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -145,6 +178,8 @@ alter table goals enable row level security;
 alter table goal_movements enable row level security;
 alter table recurring_transactions enable row level security;
 alter table investments enable row level security;
+alter table investment_valuations enable row level security;
+alter table investment_movements enable row level security;
 
 -- Una policy identica per ogni tabella: chiunque sia autenticato (loggato)
 -- può fare SELECT/INSERT/UPDATE/DELETE su qualunque riga. Chi non è
@@ -166,6 +201,10 @@ create policy "authenticated_full_access" on goal_movements
 create policy "authenticated_full_access" on recurring_transactions
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "authenticated_full_access" on investments
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "authenticated_full_access" on investment_valuations
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "authenticated_full_access" on investment_movements
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- ============================================================

@@ -421,6 +421,23 @@ tbody tr:hover { background: #fafafa; }
 }
 .category-list-item:last-child { border-bottom: none; }
 
+/* --- INSIGHTS (analisi testuale investimenti) --- */
+.insights-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.insights-list li {
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.insights-list li:last-child { border-bottom: none; }
+.insights-list li::before {
+  content: "💡 ";
+}
+
 /* --- SETTINGS --- */
 .settings-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 .file-btn { position: relative; cursor: pointer; display: inline-flex; align-items: center; }

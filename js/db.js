@@ -407,6 +407,10 @@ const investments = {
     const res = await supabaseClient.from('investments').select('*').order('date', { ascending: false });
     return dbCheck(res).map(investmentFromRow).map(withInvestmentReturns);
   },
+  async get(id) {
+    const res = await supabaseClient.from('investments').select('*').eq('id', id).single();
+    return withInvestmentReturns(investmentFromRow(dbCheck(res)));
+  },
   async create(payload) {
     const res = await supabaseClient.from('investments').insert(investmentToRow(payload)).select().single();
     return withInvestmentReturns(investmentFromRow(dbCheck(res)));
@@ -426,6 +430,85 @@ function withInvestmentReturns(inv) {
   return { ...inv, absoluteReturn, percentReturn };
 }
 
+// ---------- INVESTMENT VALUATIONS (rilevazioni storiche) ----------
+
+function valuationFromRow(r) {
+  return {
+    id: r.id, investmentId: r.investment_id, date: r.date,
+    totalValue: r.total_value, redemptionValue: r.redemption_value, mwrr: r.mwrr,
+    composition: r.composition || null, costs: r.costs,
+    dataSource: r.data_source, sourceNote: r.source_note,
+    notes: r.notes, createdAt: r.created_at
+  };
+}
+function valuationToRow(v) {
+  const row = {};
+  if (v.investmentId !== undefined) row.investment_id = v.investmentId;
+  if (v.date !== undefined) row.date = v.date;
+  if (v.totalValue !== undefined) row.total_value = v.totalValue;
+  if (v.redemptionValue !== undefined) row.redemption_value = v.redemptionValue === '' ? null : v.redemptionValue;
+  if (v.mwrr !== undefined) row.mwrr = v.mwrr === '' ? null : v.mwrr;
+  if (v.composition !== undefined) row.composition = v.composition;
+  if (v.costs !== undefined) row.costs = v.costs === '' ? null : v.costs;
+  if (v.dataSource !== undefined) row.data_source = v.dataSource;
+  if (v.sourceNote !== undefined) row.source_note = v.sourceNote;
+  if (v.notes !== undefined) row.notes = v.notes;
+  return row;
+}
+
+const investmentValuations = {
+  async listForInvestment(investmentId) {
+    const res = await supabaseClient.from('investment_valuations').select('*')
+      .eq('investment_id', investmentId).order('date', { ascending: true });
+    return dbCheck(res).map(valuationFromRow);
+  },
+  async create(payload) {
+    const res = await supabaseClient.from('investment_valuations').insert(valuationToRow(payload)).select().single();
+    return valuationFromRow(dbCheck(res));
+  },
+  async update(id, payload) {
+    const res = await supabaseClient.from('investment_valuations').update(valuationToRow(payload)).eq('id', id).select().single();
+    return valuationFromRow(dbCheck(res));
+  },
+  async remove(id) {
+    dbCheck(await supabaseClient.from('investment_valuations').delete().eq('id', id));
+  }
+};
+
+// ---------- INVESTMENT MOVEMENTS (versamenti/prelievi) ----------
+
+function movementFromRow(r) {
+  return { id: r.id, investmentId: r.investment_id, date: r.date, amount: r.amount, type: r.type, notes: r.notes, createdAt: r.created_at };
+}
+function movementToRow(m) {
+  const row = {};
+  if (m.investmentId !== undefined) row.investment_id = m.investmentId;
+  if (m.date !== undefined) row.date = m.date;
+  if (m.amount !== undefined) row.amount = m.amount;
+  if (m.type !== undefined) row.type = m.type;
+  if (m.notes !== undefined) row.notes = m.notes;
+  return row;
+}
+
+const investmentMovements = {
+  async listForInvestment(investmentId) {
+    const res = await supabaseClient.from('investment_movements').select('*')
+      .eq('investment_id', investmentId).order('date', { ascending: true });
+    return dbCheck(res).map(movementFromRow);
+  },
+  async create(payload) {
+    const res = await supabaseClient.from('investment_movements').insert(movementToRow(payload)).select().single();
+    return movementFromRow(dbCheck(res));
+  },
+  async update(id, payload) {
+    const res = await supabaseClient.from('investment_movements').update(movementToRow(payload)).eq('id', id).select().single();
+    return movementFromRow(dbCheck(res));
+  },
+  async remove(id) {
+    dbCheck(await supabaseClient.from('investment_movements').delete().eq('id', id));
+  }
+};
+
 // ---------- helper condiviso: saldo di UN conto dato il suo id ----------
 async function computeAccountBalanceById(accountId) {
   const acc = dbCheck(await supabaseClient.from('accounts').select('*').eq('id', accountId).single());
@@ -443,4 +526,7 @@ async function computeAccountBalanceById(accountId) {
   return balance;
 }
 
-window.db = { auth, accounts, transactions, transfers, categories, budgets, goals, recurring, investments };
+window.db = {
+  auth, accounts, transactions, transfers, categories, budgets, goals, recurring, investments,
+  investmentValuations, investmentMovements
+};

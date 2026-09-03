@@ -76,6 +76,18 @@ menu del browser per avere un'icona come un'app vera.
 
 ---
 
+## Aggiornamenti successivi al primo deploy
+
+Ogni volta che ti fornisco un aggiornamento con modifiche al database
+(file `sql/migration-*.sql`), va eseguito **una sola volta** su Supabase
+(SQL Editor → New query → incolla il contenuto del file → Run) **prima**
+di caricare i nuovi file su GitHub. Non tocca mai i dati già presenti,
+aggiunge solo le nuove tabelle/colonne necessarie.
+
+Migrazioni finora create:
+- `sql/migration-every-n.sql` — opzione "ogni X" per i movimenti ricorrenti
+- `sql/migration-investment-tracking.sql` — storico rilevazioni e movimenti per gli investimenti (vedi sotto)
+
 ## Note importanti
 
 - **La chiave "anon" in `supabase-config.js` non è un segreto**: è pensata
