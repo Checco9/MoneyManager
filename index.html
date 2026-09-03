@@ -238,12 +238,23 @@
 
         <div id="detail-inflation-card" class="table-card">
           <h3>Rendimento reale (al netto dell'inflazione)</h3>
-          <p class="muted-text">Inserisci manualmente l'inflazione cumulata dall'inizio dell'investimento (dato pubblico, es. da ISTAT) per calcolare quanto hai guadagnato davvero in potere d'acquisto.</p>
+          <p class="muted-text">Inflazione cumulata dall'inizio dell'investimento, usata per calcolare quanto hai guadagnato davvero in potere d'acquisto.</p>
           <div class="inline-fields">
             <input type="number" id="detail-inflation-input" step="0.1" placeholder="es. 6.5" style="max-width:120px" />
             <span class="inline-fields-label">% di inflazione cumulata</span>
+            <button type="button" id="btn-fetch-inflation" class="btn btn-secondary btn-small">🔄 Recupera da Eurostat</button>
           </div>
+          <p id="detail-inflation-source" class="muted-text"></p>
           <p id="detail-real-return-result" class="muted-text"></p>
+        </div>
+
+        <div id="detail-official-links" class="table-card" hidden>
+          <h3>Consulta i dati ufficiali</h3>
+          <p class="muted-text">Il programma non accede automaticamente alla tua area personale (niente login, niente credenziali salvate). Questi collegamenti aprono le pagine pubbliche ufficiali, per copiare comodamente i valori aggiornati.</p>
+          <div class="settings-actions">
+            <a href="https://postevita.poste.it/quotazioni" target="_blank" rel="noopener" class="btn btn-secondary">📄 Quotazioni Fondi Interni (Poste Vita)</a>
+            <a href="https://postevita.poste.it/rendimenti-e-rendiconti-annuali" target="_blank" rel="noopener" class="btn btn-secondary">📄 Rendiconti Gestione Separata (Poste Vita)</a>
+          </div>
         </div>
 
         <div id="detail-composition-section" class="cards-row two-col" hidden>
@@ -654,6 +665,7 @@
   <script src="js/db.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/investment-calculations.js"></script>
+  <script src="js/external-data.js"></script>
   <script src="js/recurring-engine.js"></script>
   <!-- Router SPA -->
   <script src="js/router.js"></script>

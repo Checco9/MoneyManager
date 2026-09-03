@@ -54,6 +54,10 @@ async function initInvestmentDetailPage() {
     currentValuations = valuations;
 
     document.getElementById('detail-investment-name').textContent = `${investment.name} (${investment.type})`;
+    document.getElementById('detail-official-links').hidden = investment.type !== 'Polizza';
+    document.getElementById('detail-inflation-input').value = '';
+    document.getElementById('detail-inflation-source').textContent = '';
+    document.getElementById('detail-real-return-result').textContent = '';
 
     renderDetailSummary();
     renderDetailInsights();
@@ -419,6 +423,27 @@ function bindDetailPageEvents() {
   document.getElementById('detail-inflation-input').addEventListener('input', () => {
     const pctReturn = investmentCalc.computePercentReturn(currentInvestment, currentMovements, currentValuations);
     updateRealReturnDisplay(pctReturn);
+  });
+
+  document.getElementById('btn-fetch-inflation').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-fetch-inflation');
+    const sourceEl = document.getElementById('detail-inflation-source');
+    btn.disabled = true;
+    btn.textContent = '⏳ Recupero in corso...';
+    try {
+      const result = await externalData.computeCumulativeInflationFromEurostat(currentInvestment.date);
+      document.getElementById('detail-inflation-input').value = result.cumulativePercent;
+      sourceEl.textContent = `Fonte: Eurostat (HICP Italia), dati da ${result.fromPeriod} a ${result.toPeriod}.`;
+      const pctReturn = investmentCalc.computePercentReturn(currentInvestment, currentMovements, currentValuations);
+      updateRealReturnDisplay(pctReturn);
+      showToast('Inflazione recuperata da Eurostat.', 'success');
+    } catch (err) {
+      sourceEl.textContent = '';
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Recupera da Eurostat';
+    }
   });
 
   document.getElementById('valuation-form').addEventListener('submit', async (e) => {
