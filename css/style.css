@@ -2,14 +2,63 @@
   --color-primary: #4f46e5;
   --color-primary-dark: #4338ca;
   --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
   --color-success: #16a34a;
+  --color-warning: #f59e0b;
   --color-bg: #f5f6fa;
   --color-surface: #ffffff;
+  --color-surface-hover: #fafafa;
   --color-border: #e5e7eb;
   --color-text: #1f2937;
   --color-text-muted: #6b7280;
+  --color-secondary-btn: #e5e7eb;
+  --color-secondary-btn-hover: #d1d5db;
+  --color-status-active-bg: #dcfce7;
+  --color-status-active-text: #15803d;
+  --color-status-inactive-bg: #f3f4f6;
+  --color-status-inactive-text: #6b7280;
+  --color-expense-bg: #fef2f2;
+  --color-income-bg: #f0fdf4;
+  --color-modal-overlay: rgba(0, 0, 0, 0.4);
   --radius: 10px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* --- TEMA SCURO ---
+   Attivato aggiungendo data-theme="dark" al tag <html> (vedi js/theme.js).
+   Siccome ogni componente dell'app usa già le variabili qui sopra invece
+   di colori fissi, per cambiare tema basta ridefinire queste variabili:
+   non serve toccare nessun'altra regola CSS del resto del file. */
+[data-theme="dark"] {
+  --color-primary: #6366f1;
+  --color-primary-dark: #818cf8;
+  --color-danger: #f87171;
+  --color-danger-hover: #ef4444;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-hover: #253449;
+  --color-border: #334155;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-secondary-btn: #334155;
+  --color-secondary-btn-hover: #475569;
+  --color-status-active-bg: #14532d;
+  --color-status-active-text: #86efac;
+  --color-status-inactive-bg: #334155;
+  --color-status-inactive-text: #94a3b8;
+  --color-expense-bg: #450a0a;
+  --color-income-bg: #052e16;
+  --color-modal-overlay: rgba(0, 0, 0, 0.65);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+body { transition: background-color 0.2s ease, color 0.2s ease; }
+
+.sidebar, .table-card, .summary-card, .modal, .modal-overlay,
+input, select, textarea, .nav-item, tbody tr, .login-box {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 * { box-sizing: border-box; }
@@ -110,11 +159,11 @@ body {
 .btn-primary { background: var(--color-primary); color: white; }
 .btn-primary:hover { background: var(--color-primary-dark); }
 
-.btn-secondary { background: var(--color-border); color: var(--color-text); }
-.btn-secondary:hover { background: #d1d5db; }
+.btn-secondary { background: var(--color-secondary-btn); color: var(--color-text); }
+.btn-secondary:hover { background: var(--color-secondary-btn-hover); }
 
 .btn-danger { background: var(--color-danger); color: white; }
-.btn-danger:hover { background: #b91c1c; }
+.btn-danger:hover { background: var(--color-danger-hover); }
 
 .btn-icon {
   background: none;
@@ -185,7 +234,7 @@ thead th {
 
 tbody tr { border-bottom: 1px solid var(--color-border); }
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #fafafa; }
+tbody tr:hover { background: var(--color-surface-hover); }
 
 .balance-positive { color: var(--color-success); font-weight: 600; }
 .balance-negative { color: var(--color-danger); font-weight: 600; }
@@ -196,8 +245,8 @@ tbody tr:hover { background: #fafafa; }
   border-radius: 999px;
   font-weight: 600;
 }
-.status-active { background: #dcfce7; color: #15803d; }
-.status-inactive { background: #f3f4f6; color: #6b7280; }
+.status-active { background: var(--color-status-active-bg); color: var(--color-status-active-text); }
+.status-inactive { background: var(--color-status-inactive-bg); color: var(--color-status-inactive-text); }
 
 .empty-state {
   text-align: center;
@@ -209,7 +258,7 @@ tbody tr:hover { background: #fafafa; }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--color-modal-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,6 +305,7 @@ tbody tr:hover { background: #fafafa; }
   font-size: 0.9rem;
   font-family: inherit;
   color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .checkbox-label {
@@ -319,6 +369,8 @@ tbody tr:hover { background: #fafafa; }
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 /* --- TWO COLUMN GRID (charts) --- */
@@ -348,6 +400,8 @@ tbody tr:hover { background: #fafafa; }
   border-radius: 8px;
   font-size: 0.85rem;
   font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .filters-bar input[type="text"] { flex: 1; min-width: 200px; }
 
@@ -370,12 +424,12 @@ tbody tr:hover { background: #fafafa; }
 .type-toggle-btn.active[data-type="expense"] {
   border-color: var(--color-danger);
   color: var(--color-danger);
-  background: #fef2f2;
+  background: var(--color-expense-bg);
 }
 .type-toggle-btn.active[data-type="income"] {
   border-color: var(--color-success);
   color: var(--color-success);
-  background: #f0fdf4;
+  background: var(--color-income-bg);
 }
 
 /* --- BUDGET / GOAL CARDS --- */
@@ -404,7 +458,7 @@ tbody tr:hover { background: #fafafa; }
 }
 .progress-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
 .progress-ok { background: var(--color-success); }
-.progress-warning { background: #f59e0b; }
+.progress-warning { background: var(--color-warning); }
 .progress-over { background: var(--color-danger); }
 
 .goal-actions { display: flex; gap: 8px; margin-top: 4px; }
@@ -476,6 +530,7 @@ tbody tr:hover { background: #fafafa; }
 .login-box input {
   width: 100%; margin-top: 4px; padding: 10px 12px;
   border: 1px solid var(--color-border); border-radius: 8px; font-size: 0.95rem;
+  background: var(--color-surface); color: var(--color-text);
 }
 .login-error { color: var(--color-danger); font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
 .app-layout[hidden] { display: none; }

@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Money Manager</title>
 
+  <!-- Imposta il tema (chiaro/scuro) PRIMA che il CSS venga applicato,
+       altrimenti si vedrebbe per un istante il tema sbagliato lampeggiare
+       ad ogni caricamento della pagina. -->
+  <script>
+    (function () {
+      var saved = localStorage.getItem('mm-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
   <!-- Icona e installabilità come app (Windows: "Installa app" dal browser;
        Android: "Aggiungi a schermata Home") -->
   <link rel="manifest" href="manifest.json" />
@@ -54,6 +65,7 @@
       <div class="sidebar-quick-actions">
         <button id="quick-add-expense" class="btn btn-primary btn-block">+ Nuova transazione</button>
         <button id="quick-add-transfer" class="btn btn-secondary btn-block">↔ Giroconto</button>
+        <button id="btn-theme-toggle" class="btn btn-secondary btn-block">🌙 Scuro</button>
       </div>
       <div class="user-bar">
         <span id="user-email"></span>
@@ -669,6 +681,7 @@
   <script src="js/recurring-engine.js"></script>
   <!-- Router SPA -->
   <script src="js/router.js"></script>
+  <script src="js/theme.js"></script>
   <!-- Pagine -->
   <script src="js/dashboard.js"></script>
   <script src="js/accounts.js"></script>
