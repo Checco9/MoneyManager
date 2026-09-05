@@ -24,13 +24,25 @@ function daysBetweenDates(d1, d2) {
  * + somma di tutti i versamenti - somma di tutti i prelievi.
  * Questo NON è il valore attuale: è quanto denaro reale hai messo
  * (o tolto) di tasca tua, indipendentemente da come si è mosso il mercato.
+ *
+ * IMPORTANTE: un dividendo non è né un versamento né un prelievo di
+ * capitale — è un rendimento che l'investimento restituisce. Non deve
+ * quindi far diminuire il capitale versato (vedi computeTotalDividends
+ * per tracciarlo separatamente).
  */
 function computeCapitalPaidIn(investment, movements) {
   let total = investment.capital;
   for (const m of movements) {
-    total += m.type === 'deposit' ? m.amount : -m.amount;
+    if (m.type === 'deposit') total += m.amount;
+    else if (m.type === 'withdrawal') total -= m.amount;
+    // 'dividend' non tocca il capitale versato, di proposito
   }
   return total;
+}
+
+/** Totale dividendi incassati su questo investimento, dato lo storico movimenti. */
+function computeTotalDividends(movements) {
+  return movements.filter((m) => m.type === 'dividend').reduce((sum, m) => sum + m.amount, 0);
 }
 
 /**
@@ -252,7 +264,7 @@ async function getEffectiveValue(investmentId, staticCurrentValue, upToDate = nu
 }
 
 window.investmentCalc = {
-  computeCapitalPaidIn, getCurrentValue, getLatestValuation,
+  computeCapitalPaidIn, computeTotalDividends, getCurrentValue, getLatestValuation,
   computeAbsoluteReturn, computePercentReturn, computeChangeSinceLastValuation,
   computeAnnualizedReturn, computeRealReturn, computeCumulativeCosts,
   getLatestComposition, generateInsights, xirr, getEffectiveValue

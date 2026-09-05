@@ -127,7 +127,9 @@ function recurringToRow(r) {
 function investmentFromRow(r) {
   return {
     id: r.id, name: r.name, type: r.type, capital: r.capital, currentValue: r.current_value,
-    date: r.date, notes: r.notes
+    date: r.date, notes: r.notes,
+    ticker: r.ticker, isin: r.isin, quantity: r.quantity, avgPrice: r.avg_price,
+    currency: r.currency || 'EUR', broker: r.broker, lastPriceUpdate: r.last_price_update
   };
 }
 function investmentToRow(i) {
@@ -137,6 +139,13 @@ function investmentToRow(i) {
   if (i.capital !== undefined) row.capital = i.capital;
   if (i.currentValue !== undefined) row.current_value = i.currentValue;
   if (i.date !== undefined) row.date = i.date || null;
+  if (i.ticker !== undefined) row.ticker = i.ticker || null;
+  if (i.isin !== undefined) row.isin = i.isin || null;
+  if (i.quantity !== undefined) row.quantity = i.quantity === '' ? null : i.quantity;
+  if (i.avgPrice !== undefined) row.avg_price = i.avgPrice === '' ? null : i.avgPrice;
+  if (i.currency !== undefined) row.currency = i.currency || 'EUR';
+  if (i.broker !== undefined) row.broker = i.broker || null;
+  if (i.lastPriceUpdate !== undefined) row.last_price_update = i.lastPriceUpdate || null;
   if (i.notes !== undefined) row.notes = i.notes;
   return row;
 }

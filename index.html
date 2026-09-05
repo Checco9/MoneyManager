@@ -234,6 +234,7 @@
           <div>
             <button id="btn-back-to-investments" class="btn btn-secondary btn-small">← Torna agli investimenti</button>
             <h1 id="detail-investment-name" style="margin-top:10px">Investimento</h1>
+            <p id="detail-identifiers" class="muted-text"></p>
           </div>
           <div class="header-actions">
             <button id="btn-new-movement" class="btn btn-secondary">↕ Versamento/Prelievo</button>
@@ -565,13 +566,27 @@
         <label>Tipo
           <select id="investment-type" required>
             <option>BTP</option><option>BOT</option><option>ETF</option>
-            <option>Azioni</option><option>Obbligazioni</option>
+            <option>Azioni</option><option>Obbligazioni</option><option>Fondo</option>
             <option>Polizza</option><option>Conto Deposito</option><option>Altro</option>
           </select>
         </label>
-        <label>Capitale investito (€) <input type="number" id="investment-capital" step="0.01" min="0" required /></label>
+        <label>Capitale investito (€)
+          <div class="inline-fields">
+            <input type="number" id="investment-capital" step="0.01" min="0" required style="flex:1" />
+            <button type="button" id="btn-calc-capital" class="btn btn-secondary btn-small" title="Calcola da quantità × prezzo medio">= Calcola</button>
+          </div>
+        </label>
         <label>Valore attuale (€) <input type="number" id="investment-current-value" step="0.01" min="0" required /></label>
         <label>Data <input type="date" id="investment-date" /></label>
+
+        <p class="muted-text" style="margin-bottom:6px">Campi opzionali (utili soprattutto per ETF/azioni)</p>
+        <label>Ticker <input type="text" id="investment-ticker" placeholder="es. VWCE" /></label>
+        <label>ISIN <input type="text" id="investment-isin" placeholder="es. IE00BK5BQT80" /></label>
+        <label>Quantità posseduta <input type="number" id="investment-quantity" step="0.000001" min="0" placeholder="es. 12,5" /></label>
+        <label>Prezzo medio di carico (€/unità) <input type="number" id="investment-avg-price" step="0.01" min="0" /></label>
+        <label>Valuta <input type="text" id="investment-currency" placeholder="EUR" maxlength="3" /></label>
+        <label>Broker/intermediario <input type="text" id="investment-broker" placeholder="es. Trade Republic" /></label>
+
         <label>Note <textarea id="investment-notes" rows="2"></textarea></label>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" data-close-modal="investment-modal">Annulla</button>
@@ -625,6 +640,7 @@
         <div class="type-toggle">
           <button type="button" class="type-toggle-btn active" data-type="deposit" id="movement-type-deposit">+ Versamento</button>
           <button type="button" class="type-toggle-btn" data-type="withdrawal" id="movement-type-withdrawal">− Prelievo</button>
+          <button type="button" class="type-toggle-btn" data-type="dividend" id="movement-type-dividend">💰 Dividendo</button>
         </div>
         <input type="hidden" id="movement-type" value="deposit" />
         <label>Data <input type="date" id="movement-date" required /></label>

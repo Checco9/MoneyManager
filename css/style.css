@@ -416,20 +416,27 @@ tbody tr:hover { background: var(--color-surface-hover); }
   padding: 10px;
   border: 2px solid var(--color-border);
   border-radius: var(--radius);
-  background: white;
+  background: var(--color-surface);
   cursor: pointer;
   font-weight: 600;
   color: var(--color-text-muted);
 }
-.type-toggle-btn.active[data-type="expense"] {
+.type-toggle-btn.active[data-type="expense"],
+.type-toggle-btn.active[data-type="withdrawal"] {
   border-color: var(--color-danger);
   color: var(--color-danger);
   background: var(--color-expense-bg);
 }
-.type-toggle-btn.active[data-type="income"] {
+.type-toggle-btn.active[data-type="income"],
+.type-toggle-btn.active[data-type="deposit"] {
   border-color: var(--color-success);
   color: var(--color-success);
   background: var(--color-income-bg);
+}
+.type-toggle-btn.active[data-type="dividend"] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-bg);
 }
 
 /* --- BUDGET / GOAL CARDS --- */

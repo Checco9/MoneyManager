@@ -78,16 +78,36 @@ function renderDetailSummary() {
   const pctReturn = investmentCalc.computePercentReturn(currentInvestment, currentMovements, currentValuations);
   const annualized = investmentCalc.computeAnnualizedReturn(currentInvestment, currentMovements, currentValuations);
   const latest = investmentCalc.getLatestValuation(currentValuations);
+  const dividends = investmentCalc.computeTotalDividends(currentMovements);
 
   const returnClass = absReturn >= 0 ? 'balance-positive' : 'balance-negative';
 
-  document.getElementById('detail-summary').innerHTML = `
+  let cards = `
     <div class="summary-card"><div class="label">Capitale versato</div><div class="value">${formatMoney(paidIn)}</div></div>
     <div class="summary-card"><div class="label">Valore attuale</div><div class="value">${formatMoney(current)}</div></div>
     <div class="summary-card"><div class="label">Rendimento</div><div class="value ${returnClass}">${absReturn >= 0 ? '+' : ''}${formatMoney(absReturn)}${pctReturn !== null ? ` (${pctReturn >= 0 ? '+' : ''}${pctReturn}%)` : ''}</div></div>
     <div class="summary-card"><div class="label">Rendimento annualizzato</div><div class="value">${annualized !== null ? (annualized * 100).toFixed(1) + '%' : '—'}</div></div>
     <div class="summary-card"><div class="label">MWRR (ultima rilevazione)</div><div class="value">${latest && latest.mwrr !== null && latest.mwrr !== undefined ? latest.mwrr + '%' : '—'}</div></div>
   `;
+
+  if (currentInvestment.quantity) {
+    const unitPrice = currentInvestment.avgPrice ? formatMoney(currentInvestment.avgPrice) : '—';
+    cards += `<div class="summary-card"><div class="label">Quantità (prezzo medio)</div><div class="value" style="font-size:1.1rem">${currentInvestment.quantity} × ${unitPrice}</div></div>`;
+  }
+  if (dividends > 0) {
+    cards += `<div class="summary-card"><div class="label">Dividendi incassati</div><div class="value balance-positive">${formatMoney(dividends)}</div></div>`;
+  }
+
+  document.getElementById('detail-summary').innerHTML = cards;
+
+  const identifiers = [
+    currentInvestment.ticker ? `Ticker: ${escapeHtml(currentInvestment.ticker)}` : null,
+    currentInvestment.isin ? `ISIN: ${escapeHtml(currentInvestment.isin)}` : null,
+    currentInvestment.broker ? `Broker: ${escapeHtml(currentInvestment.broker)}` : null,
+    currentInvestment.currency && currentInvestment.currency !== 'EUR' ? `Valuta: ${escapeHtml(currentInvestment.currency)}` : null
+  ].filter(Boolean);
+  const idLine = document.getElementById('detail-identifiers');
+  if (idLine) idLine.textContent = identifiers.join(' · ');
 
   // Sezione inflazione: calcolo live quando l'utente digita un valore
   updateRealReturnDisplay(pctReturn);
@@ -149,6 +169,8 @@ function renderValuationsTable() {
   }).join('');
 }
 
+const MOVEMENT_TYPE_LABELS = { deposit: '⬆️ Versamento', withdrawal: '⬇️ Prelievo', dividend: '💰 Dividendo' };
+
 function renderMovementsTable() {
   const body = document.getElementById('detail-movements-table-body');
   const empty = document.getElementById('detail-movements-empty');
@@ -163,8 +185,8 @@ function renderMovementsTable() {
   const sorted = [...currentMovements].sort((a, b) => b.date.localeCompare(a.date));
   body.innerHTML = sorted.map((m) => `<tr>
     <td data-label="Data">${formatDate(m.date)}</td>
-    <td data-label="Tipo">${m.type === 'deposit' ? '⬆️ Versamento' : '⬇️ Prelievo'}</td>
-    <td data-label="Importo" class="${m.type === 'deposit' ? 'balance-positive' : 'balance-negative'}">${formatMoney(m.amount)}</td>
+    <td data-label="Tipo">${MOVEMENT_TYPE_LABELS[m.type] || m.type}</td>
+    <td data-label="Importo" class="${m.type === 'withdrawal' ? 'balance-negative' : 'balance-positive'}">${formatMoney(m.amount)}</td>
     <td data-label="Note">${escapeHtml(m.notes) || '<span class="muted-text">—</span>'}</td>
     <td>
       <button class="btn-icon" title="Modifica" onclick="openEditMovement('${m.id}')">✏️</button>
@@ -366,6 +388,7 @@ function setMovementTypeToggle(type) {
   document.getElementById('movement-type').value = type;
   document.getElementById('movement-type-deposit').classList.toggle('active', type === 'deposit');
   document.getElementById('movement-type-withdrawal').classList.toggle('active', type === 'withdrawal');
+  document.getElementById('movement-type-dividend').classList.toggle('active', type === 'dividend');
 }
 
 function openNewMovement() {
@@ -419,6 +442,7 @@ function bindDetailPageEvents() {
 
   document.getElementById('movement-type-deposit').addEventListener('click', () => setMovementTypeToggle('deposit'));
   document.getElementById('movement-type-withdrawal').addEventListener('click', () => setMovementTypeToggle('withdrawal'));
+  document.getElementById('movement-type-dividend').addEventListener('click', () => setMovementTypeToggle('dividend'));
 
   document.getElementById('detail-inflation-input').addEventListener('input', () => {
     const pctReturn = investmentCalc.computePercentReturn(currentInvestment, currentMovements, currentValuations);

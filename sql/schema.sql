@@ -124,11 +124,20 @@ create table recurring_transactions (
 create table investments (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  type text not null check (type in ('BTP','BOT','ETF','Azioni','Obbligazioni','Polizza','Conto Deposito','Altro')),
+  type text not null check (type in ('BTP','BOT','ETF','Azioni','Obbligazioni','Fondo','Polizza','Conto Deposito','Altro')),
   capital integer not null default 0,
   current_value integer not null default 0,
   date date,
-  notes text default ''
+  notes text default '',
+  -- Campi opzionali per ETF/azioni (Fase 1 portfolio tracker). Nullable:
+  -- un investimento semplice (es. una polizza) non li compila mai.
+  ticker text,
+  isin text,
+  quantity numeric(18,6),
+  avg_price integer,          -- prezzo medio di carico, centesimi per unità
+  currency text default 'EUR',
+  broker text,
+  last_price_update date
 );
 
 -- Storico rilevazioni: una riga = una "fotografia" nel tempo. Vedi
@@ -159,7 +168,7 @@ create table investment_movements (
   investment_id uuid not null references investments(id) on delete cascade,
   date date not null,
   amount integer not null check (amount > 0),
-  type text not null check (type in ('deposit','withdrawal')),
+  type text not null check (type in ('deposit','withdrawal','dividend')),
   notes text default '',
   created_at timestamptz not null default now()
 );

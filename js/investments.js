@@ -25,9 +25,10 @@ async function loadInvestments() {
       const hasHistory = valuations.length > 0;
       const capital = hasHistory ? investmentCalc.computeCapitalPaidIn(inv, movements) : inv.capital;
       const currentValue = hasHistory ? investmentCalc.getCurrentValue(inv, valuations) : inv.currentValue;
+      const dividends = investmentCalc.computeTotalDividends(movements);
       const absoluteReturn = currentValue - capital;
       const percentReturn = capital > 0 ? Math.round((absoluteReturn / capital) * 1000) / 10 : 0;
-      return { ...inv, capital, currentValue, absoluteReturn, percentReturn, hasHistory };
+      return { ...inv, capital, currentValue, absoluteReturn, percentReturn, dividends, hasHistory };
     }));
     allInvestmentsCache = enriched;
     renderInvestmentsTable(enriched);
@@ -50,12 +51,14 @@ function renderInvestmentsTable(list) {
     .map((i) => {
       const cls = i.absoluteReturn >= 0 ? 'balance-positive' : 'balance-negative';
       const sign = i.absoluteReturn >= 0 ? '+' : '';
+      const subtitle = [i.ticker, i.broker].filter(Boolean).join(' · ');
+      const dividendNote = i.dividends > 0 ? `<div class="muted-text" style="font-size:0.75rem">di cui ${formatMoney(i.dividends)} dividendi</div>` : '';
       return `<tr>
-        <td data-label="Nome">${escapeHtml(i.name)}${i.hasHistory ? ' <span class="status-pill status-active" title="Ha uno storico rilevazioni">storico</span>' : ''}</td>
+        <td data-label="Nome">${escapeHtml(i.name)}${i.hasHistory ? ' <span class="status-pill status-active" title="Ha uno storico rilevazioni">storico</span>' : ''}${subtitle ? `<div class="muted-text" style="font-size:0.78rem">${escapeHtml(subtitle)}</div>` : ''}</td>
         <td data-label="Tipo">${i.type}</td>
         <td data-label="Capitale">${formatMoney(i.capital)}</td>
         <td data-label="Valore attuale">${formatMoney(i.currentValue)}</td>
-        <td data-label="Rendimento" class="${cls}">${sign}${formatMoney(i.absoluteReturn)} (${sign}${i.percentReturn}%)</td>
+        <td data-label="Rendimento" class="${cls}">${sign}${formatMoney(i.absoluteReturn)} (${sign}${i.percentReturn}%)${dividendNote}</td>
         <td>
           <button class="btn-icon" title="Dettagli e storico" onclick="openInvestmentDetail('${i.id}')">📊</button>
           <button class="btn-icon" title="Modifica" onclick="openEditInvestment('${i.id}')">✏️</button>
@@ -71,6 +74,7 @@ function openNewInvestment() {
   document.getElementById('investment-form').reset();
   document.getElementById('investment-id').value = '';
   document.getElementById('investment-date').value = todayStr();
+  document.getElementById('investment-currency').value = 'EUR';
   openModal('investment-modal');
 }
 
@@ -86,6 +90,12 @@ function openEditInvestment(id) {
     document.getElementById('investment-current-value').value = (inv.currentValue / 100).toFixed(2);
     document.getElementById('investment-date').value = inv.date || '';
     document.getElementById('investment-notes').value = inv.notes || '';
+    document.getElementById('investment-ticker').value = inv.ticker || '';
+    document.getElementById('investment-isin').value = inv.isin || '';
+    document.getElementById('investment-quantity').value = inv.quantity !== null && inv.quantity !== undefined ? inv.quantity : '';
+    document.getElementById('investment-avg-price').value = inv.avgPrice ? (inv.avgPrice / 100).toFixed(2) : '';
+    document.getElementById('investment-currency').value = inv.currency || 'EUR';
+    document.getElementById('investment-broker').value = inv.broker || '';
     openModal('investment-modal');
   }).catch((err) => showToast(err.message, 'error'));
 }
@@ -113,16 +123,34 @@ function bindInvestmentsPageEvents() {
 
   document.getElementById('btn-new-investment').addEventListener('click', openNewInvestment);
 
+  document.getElementById('btn-calc-capital').addEventListener('click', () => {
+    const qty = parseFloat(document.getElementById('investment-quantity').value);
+    const price = parseFloat(document.getElementById('investment-avg-price').value);
+    if (!qty || !price) {
+      showToast('Inserisci prima quantità e prezzo medio.', 'error');
+      return;
+    }
+    document.getElementById('investment-capital').value = (qty * price).toFixed(2);
+  });
+
   document.getElementById('investment-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('investment-id').value;
+    const quantityVal = document.getElementById('investment-quantity').value;
+    const avgPriceVal = document.getElementById('investment-avg-price').value;
     const payload = {
       name: document.getElementById('investment-name').value,
       type: document.getElementById('investment-type').value,
       capital: eurosToCents(document.getElementById('investment-capital').value),
       currentValue: eurosToCents(document.getElementById('investment-current-value').value),
       date: document.getElementById('investment-date').value,
-      notes: document.getElementById('investment-notes').value
+      notes: document.getElementById('investment-notes').value,
+      ticker: document.getElementById('investment-ticker').value.trim(),
+      isin: document.getElementById('investment-isin').value.trim(),
+      quantity: quantityVal !== '' ? parseFloat(quantityVal) : null,
+      avgPrice: avgPriceVal !== '' ? eurosToCents(avgPriceVal) : null,
+      currency: document.getElementById('investment-currency').value.trim() || 'EUR',
+      broker: document.getElementById('investment-broker').value.trim()
     };
     try {
       if (id) {
