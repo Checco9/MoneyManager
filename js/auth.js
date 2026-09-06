@@ -65,8 +65,9 @@ function showApp(session) {
 async function startApp() {
   handleHashChange();
   // Non generiamo più in automatico e senza avviso: chiediamo conferma
-  // se ci sono movimenti ricorrenti scaduti da registrare.
+  // se ci sono movimenti ricorrenti o versamenti PAC scaduti da registrare.
   promptRecurringGeneration(false);
+  promptPacGeneration(false);
 }
 
 /**
@@ -105,5 +106,39 @@ async function promptRecurringGeneration(manual = false) {
 }
 
 window.promptRecurringGeneration = promptRecurringGeneration;
+
+/**
+ * Stessa logica di promptRecurringGeneration, mirror ma per i PAC: mostra
+ * un riepilogo (quanti versamenti, quali investimenti coinvolti) e chiede
+ * conferma prima di registrarli davvero.
+ */
+async function promptPacGeneration(manual = false) {
+  try {
+    const due = await pacEngine.previewDuePacs();
+
+    if (due.length === 0) {
+      if (manual) showToast('Nessun versamento PAC da registrare al momento.', 'info');
+      return;
+    }
+
+    const total = due.reduce((s, d) => s + d.amount, 0);
+    const preview = [...new Set(due.map((d) => d.name))].slice(0, 3).join(', ');
+
+    confirmAction(
+      `Ci sono ${due.length} versamenti PAC da registrare (${preview}), per un totale di ${formatMoney(total)}. Vuoi registrarli ora?`,
+      async () => {
+        const created = await pacEngine.generateDuePacs();
+        showToast(`Registrati ${created} versamenti PAC.`, 'success');
+        handleHashChange();
+      },
+      'Versamenti PAC da registrare'
+    );
+  } catch (err) {
+    if (manual) showToast(err.message, 'error');
+    else console.warn('Controllo PAC saltato:', err.message);
+  }
+}
+
+window.promptPacGeneration = promptPacGeneration;
 
 document.addEventListener('DOMContentLoaded', initAuthGate);

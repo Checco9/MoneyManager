@@ -71,13 +71,14 @@ function renderTransactionsTable(list) {
     .map((t) => {
       const account = txAccountsCache.find((a) => a.id === t.accountId);
       const category = txCategoriesCache.find((c) => c.id === t.categoryId);
-      const cls = t.type === 'income' ? 'balance-positive' : 'balance-negative';
+      const cls = t.type === 'income' ? 'balance-positive' : t.type === 'investment' ? 'balance-investment' : 'balance-negative';
       const sign = t.type === 'income' ? '+' : '−';
+      const typeLabel = t.type === 'income' ? '⬆️ Entrata' : t.type === 'investment' ? '📈 Investimento' : '⬇️ Uscita';
       return `<tr>
         <td data-label="Data">${formatDate(t.date)}</td>
-        <td data-label="Tipo">${t.type === 'income' ? '⬆️ Entrata' : '⬇️ Uscita'}</td>
+        <td data-label="Tipo">${typeLabel}</td>
         <td data-label="Conto">${account ? escapeHtml(account.name) : '—'}</td>
-        <td data-label="Categoria">${category ? `${category.icon} ${escapeHtml(category.name)}` : '—'}</td>
+        <td data-label="Categoria">${category ? `${category.icon} ${escapeHtml(category.name)}` : '<span class="muted-text">—</span>'}</td>
         <td data-label="Descrizione">${escapeHtml(t.description) || '<span class="muted-text">—</span>'}</td>
         <td data-label="Importo" class="${cls}">${sign} ${formatMoney(t.amount)}</td>
         <td>

@@ -8,14 +8,16 @@ let dashAccountsChart = null;
 
 async function initDashboardPage() {
   try {
-    const [wealth, monthSummary, trend, recentTx] = await Promise.all([
+    const [wealth, monthSummary, trend, recentTx, lastMonthWealth, startOfYearWealth] = await Promise.all([
       calc.computeWealthBreakdown(),
       calc.computeMonthSummary(currentMonthStr()),
       calc.computeMonthlyTrend(6),
-      db.transactions.list({ sort: 'date_desc' })
+      db.transactions.list({ sort: 'date_desc' }),
+      calc.computeWealthBreakdown(getEndOfLastMonth()),
+      calc.computeWealthBreakdown(getEndOfPreviousYear())
     ]);
 
-    renderDashSummary(wealth, monthSummary);
+    renderDashSummary(wealth, monthSummary, lastMonthWealth, startOfYearWealth);
     renderDashRecent(recentTx.slice(0, 8));
 
     // I grafici dipendono da una libreria esterna (Chart.js) caricata da
@@ -33,11 +35,37 @@ async function initDashboardPage() {
   }
 }
 
-function renderDashSummary(wealth, monthSummary) {
+function getEndOfLastMonth() {
+  const now = new Date();
+  // Giorno "0" del mese corrente = ultimo giorno del mese precedente
+  const d = new Date(now.getFullYear(), now.getMonth(), 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getEndOfPreviousYear() {
+  return `${new Date().getFullYear() - 1}-12-31`;
+}
+
+function formatDelta(deltaAbs, deltaPct) {
+  if (deltaPct === null) return formatMoney(deltaAbs);
+  const sign = deltaAbs >= 0 ? '+' : '';
+  return `${sign}${formatMoney(deltaAbs)} (${sign}${deltaPct}%)`;
+}
+
+function renderDashSummary(wealth, monthSummary, lastMonthWealth, startOfYearWealth) {
+  const deltaMonth = wealth.total - lastMonthWealth.total;
+  const deltaMonthPct = lastMonthWealth.total !== 0 ? Math.round((deltaMonth / lastMonthWealth.total) * 1000) / 10 : null;
+  const deltaYear = wealth.total - startOfYearWealth.total;
+  const deltaYearPct = startOfYearWealth.total !== 0 ? Math.round((deltaYear / startOfYearWealth.total) * 1000) / 10 : null;
+  const deltaMonthClass = deltaMonth >= 0 ? 'balance-positive' : 'balance-negative';
+  const deltaYearClass = deltaYear >= 0 ? 'balance-positive' : 'balance-negative';
+
   document.getElementById('dash-summary').innerHTML = `
     <div class="summary-card total"><div class="label">Patrimonio totale</div><div class="value">${formatMoney(wealth.total)}</div></div>
     <div class="summary-card"><div class="label">Liquidità</div><div class="value">${formatMoney(wealth.liquidity)}</div></div>
     <div class="summary-card"><div class="label">Investimenti</div><div class="value">${formatMoney(wealth.investments)}</div></div>
+    <div class="summary-card"><div class="label">Variazione vs mese scorso</div><div class="value ${deltaMonthClass}" style="font-size:1.1rem">${formatDelta(deltaMonth, deltaMonthPct)}</div></div>
+    <div class="summary-card"><div class="label">Variazione da inizio anno</div><div class="value ${deltaYearClass}" style="font-size:1.1rem">${formatDelta(deltaYear, deltaYearPct)}</div></div>
     <div class="summary-card"><div class="label">Entrate del mese</div><div class="value" style="color:var(--color-success)">${formatMoney(monthSummary.income)}</div></div>
     <div class="summary-card"><div class="label">Uscite del mese</div><div class="value" style="color:var(--color-danger)">${formatMoney(monthSummary.expense)}</div></div>
     <div class="summary-card"><div class="label">Risparmio del mese</div><div class="value">${formatMoney(monthSummary.savings)}</div></div>
@@ -52,7 +80,7 @@ function renderDashRecent(transactions) {
   }
   body.innerHTML = transactions
     .map((t) => {
-      const cls = t.type === 'income' ? 'balance-positive' : 'balance-negative';
+      const cls = t.type === 'income' ? 'balance-positive' : t.type === 'investment' ? 'balance-investment' : 'balance-negative';
       const sign = t.type === 'income' ? '+' : '−';
       return `<tr>
         <td>${formatDate(t.date)}</td>

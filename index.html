@@ -58,7 +58,9 @@
         <a href="#goals" class="nav-item" data-page="goals">🏆 Obiettivi</a>
         <a href="#recurring" class="nav-item" data-page="recurring">🔁 Ricorrenti</a>
         <a href="#investments" class="nav-item" data-page="investments">📈 Investimenti</a>
+        <a href="#pac" class="nav-item" data-page="pac">🔄 PAC</a>
         <a href="#statistics" class="nav-item" data-page="statistics">📉 Statistiche</a>
+        <a href="#financial-health" class="nav-item" data-page="financial-health">❤️ Salute finanziaria</a>
         <a href="#categories" class="nav-item" data-page="categories">🏷️ Categorie</a>
         <a href="#settings" class="nav-item" data-page="settings">⚙️ Impostazioni</a>
       </nav>
@@ -124,9 +126,10 @@
           <select id="tx-filter-account"><option value="">Tutti i conti</option></select>
           <select id="tx-filter-category"><option value="">Tutte le categorie</option></select>
           <select id="tx-filter-type">
-            <option value="">Entrate e uscite</option>
+            <option value="">Tutti i movimenti</option>
             <option value="income">Solo entrate</option>
             <option value="expense">Solo uscite</option>
+            <option value="investment">Solo investimenti (PAC)</option>
           </select>
           <input type="date" id="tx-filter-from" title="Da data" />
           <input type="date" id="tx-filter-to" title="A data" />
@@ -226,6 +229,20 @@
           </table>
           <p id="investments-empty-state" class="empty-state" hidden>Nessun investimento registrato.</p>
         </section>
+      </section>
+
+      <!-- PAC (piani di accumulo) -->
+      <section id="page-pac" class="page" hidden>
+        <header class="page-header">
+          <h1>PAC — Piani di accumulo</h1>
+          <div class="header-actions">
+            <button id="btn-generate-pac" class="btn btn-secondary">🔄 Genera dovuti</button>
+            <button id="btn-new-pac" class="btn btn-primary">+ Nuovo PAC</button>
+          </div>
+        </header>
+
+        <div id="pac-grid" class="cards-row"></div>
+        <p id="pac-empty-state" class="empty-state" hidden>Nessun PAC creato ancora.</p>
       </section>
 
       <!-- DETTAGLIO INVESTIMENTO -->
@@ -345,7 +362,35 @@
             <canvas id="stats-chart-income-cat"></canvas>
           </div>
         </div>
+        <div class="cards-row two-col">
+          <div class="table-card chart-card">
+            <h3>Allocazione del patrimonio</h3>
+            <canvas id="stats-chart-allocation"></canvas>
+          </div>
+          <div class="table-card chart-card" id="stats-asset-class-card" hidden>
+            <h3>Investimenti per categoria</h3>
+            <canvas id="stats-chart-asset-class"></canvas>
+          </div>
+        </div>
         <div id="stats-insights" class="cards-row"></div>
+      </section>
+
+      <!-- SALUTE FINANZIARIA -->
+      <section id="page-financial-health" class="page" hidden>
+        <header class="page-header"><h1>Salute finanziaria</h1></header>
+        <p class="muted-text">Questi sono indicatori statistici calcolati sui tuoi dati — non sono una consulenza finanziaria professionale, e non sostituiscono il parere di un consulente qualificato.</p>
+
+        <div id="fh-summary" class="cards-row"></div>
+
+        <div class="table-card chart-card">
+          <h3>Andamento del patrimonio (12 mesi)</h3>
+          <canvas id="fh-chart-wealth"></canvas>
+        </div>
+
+        <div class="table-card">
+          <h3>Cosa dicono questi numeri</h3>
+          <ul id="fh-insights" class="insights-list"></ul>
+        </div>
       </section>
 
       <!-- CATEGORIE -->
@@ -494,6 +539,7 @@
         <label>Nome <input type="text" id="goal-name" placeholder="Es. Nuova moto" required /></label>
         <label>Importo obiettivo (€) <input type="number" id="goal-target" step="0.01" min="0.01" required /></label>
         <label>Data obiettivo (opzionale) <input type="date" id="goal-date" /></label>
+        <label>Conto dedicato (opzionale) <select id="goal-linked-account"><option value="">Nessuno in particolare</option></select></label>
         <label>Icona (emoji) <input type="text" id="goal-icon" placeholder="🎯" maxlength="4" /></label>
         <label>Descrizione <textarea id="goal-description" rows="2"></textarea></label>
         <div class="modal-actions">
@@ -654,6 +700,38 @@
     </div>
   </div>
 
+  <!-- PAC -->
+  <div id="pac-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <h2 id="pac-modal-title">Nuovo PAC</h2>
+      <form id="pac-form">
+        <input type="hidden" id="pac-id" />
+        <label>Nome <input type="text" id="pac-name" placeholder="Es. PAC VWCE" required /></label>
+        <label>Investimento di destinazione <select id="pac-investment" required></select></label>
+        <label>Conto di addebito <select id="pac-account" required></select></label>
+        <label>Importo per versamento (€) <input type="number" id="pac-amount" step="0.01" min="0.01" required /></label>
+        <label>Frequenza
+          <div class="inline-fields">
+            <span class="inline-fields-label">Ogni</span>
+            <input type="number" id="pac-every-n" min="1" value="1" required />
+            <select id="pac-frequency" required>
+              <option value="daily">giorno/i</option>
+              <option value="weekly">settimana/e</option>
+              <option value="monthly" selected>mese/i</option>
+              <option value="yearly">anno/i</option>
+            </select>
+          </div>
+        </label>
+        <label>Data di inizio <input type="date" id="pac-start" required /></label>
+        <label>Data di fine (opzionale) <input type="date" id="pac-end" /></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal="pac-modal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="category-modal" class="modal-overlay" hidden>
     <div class="modal modal-small">
       <h2 id="category-modal-title">Nuova categoria</h2>
@@ -695,6 +773,7 @@
   <script src="js/investment-calculations.js"></script>
   <script src="js/external-data.js"></script>
   <script src="js/recurring-engine.js"></script>
+  <script src="js/pac-engine.js"></script>
   <!-- Router SPA -->
   <script src="js/router.js"></script>
   <script src="js/theme.js"></script>
@@ -707,8 +786,10 @@
   <script src="js/goals.js"></script>
   <script src="js/recurring.js"></script>
   <script src="js/investments.js"></script>
+  <script src="js/pac.js"></script>
   <script src="js/investment-detail.js"></script>
   <script src="js/statistics.js"></script>
+  <script src="js/financial-health.js"></script>
   <script src="js/categories.js"></script>
   <script src="js/settings.js"></script>
   <!-- Login/logout + avvio app (deve stare per ultimo) -->

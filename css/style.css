@@ -238,6 +238,7 @@ tbody tr:hover { background: var(--color-surface-hover); }
 
 .balance-positive { color: var(--color-success); font-weight: 600; }
 .balance-negative { color: var(--color-danger); font-weight: 600; }
+.balance-investment { color: var(--color-primary); font-weight: 600; }
 
 .status-pill {
   font-size: 0.75rem;

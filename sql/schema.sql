@@ -46,7 +46,7 @@ create table transactions (
   id uuid primary key default gen_random_uuid(),
   date date not null,
   time time,
-  type text not null check (type in ('income','expense')),
+  type text not null check (type in ('income','expense','investment')),
   amount integer not null check (amount > 0),
   account_id uuid not null references accounts(id) on delete restrict,
   category_id uuid references categories(id) on delete set null,
@@ -170,8 +170,30 @@ create table investment_movements (
   amount integer not null check (amount > 0),
   type text not null check (type in ('deposit','withdrawal','dividend')),
   notes text default '',
+  pac_id uuid,  -- collegato dopo la creazione di investment_pacs qui sotto
   created_at timestamptz not null default now()
 );
+
+-- PAC (piani di accumulo): stessa logica di scheduling già usata per i
+-- movimenti ricorrenti (frequenza + "ogni X" + next_due_date), qui
+-- applicata a versamenti automatici verso un investimento.
+create table investment_pacs (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  investment_id uuid not null references investments(id) on delete cascade,
+  account_id uuid not null references accounts(id) on delete restrict,
+  amount integer not null check (amount > 0),
+  frequency text not null check (frequency in ('daily','weekly','monthly','yearly')),
+  every_n integer not null default 1 check (every_n >= 1),
+  start_date date not null,
+  end_date date,
+  active boolean not null default true,
+  next_due_date date not null,
+  last_generated_date date
+);
+
+alter table investment_movements add constraint investment_movements_pac_id_fkey
+  foreign key (pac_id) references investment_pacs(id) on delete set null;
 
 -- ============================================================
 -- ROW LEVEL SECURITY: solo utenti autenticati possono leggere/scrivere.
@@ -189,6 +211,7 @@ alter table recurring_transactions enable row level security;
 alter table investments enable row level security;
 alter table investment_valuations enable row level security;
 alter table investment_movements enable row level security;
+alter table investment_pacs enable row level security;
 
 -- Una policy identica per ogni tabella: chiunque sia autenticato (loggato)
 -- può fare SELECT/INSERT/UPDATE/DELETE su qualunque riga. Chi non è
@@ -214,6 +237,8 @@ create policy "authenticated_full_access" on investments
 create policy "authenticated_full_access" on investment_valuations
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "authenticated_full_access" on investment_movements
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "authenticated_full_access" on investment_pacs
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- ============================================================

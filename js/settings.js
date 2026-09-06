@@ -17,14 +17,20 @@ let settingsPageBound = false;
 
 const EXPORT_TABLES = [
   'accounts', 'categories', 'transactions', 'transfers',
-  'budgets', 'goals', 'goal_movements', 'recurring_transactions', 'investments'
+  'budgets', 'goals', 'goal_movements', 'recurring_transactions', 'investments',
+  'investment_valuations', 'investment_movements', 'investment_pacs'
 ];
 
 // Ordine di cancellazione: prima le tabelle "figlie" (con FK verso le
 // altre), poi quelle "genitore". L'inserimento userà l'ordine inverso.
+//
+// NOTA STORICA: "investment_valuations" e "investment_movements" mancavano
+// da questa lista prima d'ora — un bug che faceva sì che il backup non
+// includesse affatto lo storico degli investimenti. Corretto qui.
 const DELETE_ORDER = [
-  'goal_movements', 'goals', 'transactions', 'transfers',
-  'budgets', 'recurring_transactions', 'investments', 'categories', 'accounts'
+  'goal_movements', 'investment_movements', 'investment_valuations', 'investment_pacs',
+  'goals', 'transactions', 'transfers', 'budgets', 'recurring_transactions',
+  'investments', 'categories', 'accounts'
 ];
 const INSERT_ORDER = [...DELETE_ORDER].reverse();
 
@@ -51,14 +57,30 @@ function downloadJson(obj, filename) {
   URL.revokeObjectURL(url);
 }
 
+// Tabelle presenti fin dalla prima versione del backup: se mancano, il
+// file è sicuramente corrotto o non è un backup di questa app.
+const REQUIRED_LEGACY_TABLES = [
+  'accounts', 'categories', 'transactions', 'transfers',
+  'budgets', 'goals', 'goal_movements', 'recurring_transactions', 'investments'
+];
+
 function validateBackupStructure(data) {
   const errors = [];
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     return ['Il file non è un oggetto JSON valido.'];
   }
-  for (const table of EXPORT_TABLES) {
+  for (const table of REQUIRED_LEGACY_TABLES) {
     if (!(table in data)) errors.push(`Manca la sezione "${table}" nel file di backup.`);
     else if (!Array.isArray(data[table])) errors.push(`La sezione "${table}" dovrebbe essere un elenco.`);
+  }
+  // Le tabelle aggiunte in versioni successive sono opzionali: un backup
+  // fatto prima che esistessero semplicemente non le conterrà, e va bene
+  // così (verranno trattate come vuote, vedi importAllData).
+  for (const table of EXPORT_TABLES) {
+    if (REQUIRED_LEGACY_TABLES.includes(table)) continue;
+    if (table in data && !Array.isArray(data[table])) {
+      errors.push(`La sezione "${table}" dovrebbe essere un elenco.`);
+    }
   }
   return errors;
 }

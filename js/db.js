@@ -353,6 +353,7 @@ const goals = {
     if (payload.targetDate !== undefined) row.target_date = payload.targetDate || null;
     if (payload.description !== undefined) row.description = payload.description;
     if (payload.icon !== undefined) row.icon = payload.icon;
+    if (payload.linkedAccountId !== undefined) row.linked_account_id = payload.linkedAccountId || null;
     const res = await supabaseClient.from('goals').update(row).eq('id', id).select().single();
     return goalFromRow(dbCheck(res));
   },
@@ -487,7 +488,7 @@ const investmentValuations = {
 // ---------- INVESTMENT MOVEMENTS (versamenti/prelievi) ----------
 
 function movementFromRow(r) {
-  return { id: r.id, investmentId: r.investment_id, date: r.date, amount: r.amount, type: r.type, notes: r.notes, createdAt: r.created_at };
+  return { id: r.id, investmentId: r.investment_id, date: r.date, amount: r.amount, type: r.type, notes: r.notes, pacId: r.pac_id, createdAt: r.created_at };
 }
 function movementToRow(m) {
   const row = {};
@@ -496,6 +497,7 @@ function movementToRow(m) {
   if (m.amount !== undefined) row.amount = m.amount;
   if (m.type !== undefined) row.type = m.type;
   if (m.notes !== undefined) row.notes = m.notes;
+  if (m.pacId !== undefined) row.pac_id = m.pacId;
   return row;
 }
 
@@ -503,6 +505,11 @@ const investmentMovements = {
   async listForInvestment(investmentId) {
     const res = await supabaseClient.from('investment_movements').select('*')
       .eq('investment_id', investmentId).order('date', { ascending: true });
+    return dbCheck(res).map(movementFromRow);
+  },
+  async listForPac(pacId) {
+    const res = await supabaseClient.from('investment_movements').select('*')
+      .eq('pac_id', pacId).order('date', { ascending: false });
     return dbCheck(res).map(movementFromRow);
   },
   async create(payload) {
@@ -535,7 +542,53 @@ async function computeAccountBalanceById(accountId) {
   return balance;
 }
 
+// ================= PAC (piani di accumulo) =================
+
+function pacFromRow(r) {
+  return {
+    id: r.id, name: r.name, investmentId: r.investment_id, accountId: r.account_id,
+    amount: r.amount, frequency: r.frequency, everyN: r.every_n || 1,
+    startDate: r.start_date, endDate: r.end_date, active: r.active,
+    nextDueDate: r.next_due_date, lastGeneratedDate: r.last_generated_date
+  };
+}
+function pacToRow(p) {
+  const row = {};
+  if (p.name !== undefined) row.name = p.name;
+  if (p.investmentId !== undefined) row.investment_id = p.investmentId;
+  if (p.accountId !== undefined) row.account_id = p.accountId;
+  if (p.amount !== undefined) row.amount = p.amount;
+  if (p.frequency !== undefined) row.frequency = p.frequency;
+  if (p.everyN !== undefined) row.every_n = p.everyN;
+  if (p.startDate !== undefined) row.start_date = p.startDate;
+  if (p.endDate !== undefined) row.end_date = p.endDate || null;
+  if (p.active !== undefined) row.active = p.active;
+  if (p.nextDueDate !== undefined) row.next_due_date = p.nextDueDate;
+  if (p.lastGeneratedDate !== undefined) row.last_generated_date = p.lastGeneratedDate;
+  return row;
+}
+
+const pacs = {
+  async list() {
+    const res = await supabaseClient.from('investment_pacs').select('*').order('next_due_date');
+    return dbCheck(res).map(pacFromRow);
+  },
+  async create(payload) {
+    const row = pacToRow(payload);
+    row.next_due_date = payload.startDate;
+    const res = await supabaseClient.from('investment_pacs').insert(row).select().single();
+    return pacFromRow(dbCheck(res));
+  },
+  async update(id, payload) {
+    const res = await supabaseClient.from('investment_pacs').update(pacToRow(payload)).eq('id', id).select().single();
+    return pacFromRow(dbCheck(res));
+  },
+  async remove(id) {
+    dbCheck(await supabaseClient.from('investment_pacs').delete().eq('id', id));
+  }
+};
+
 window.db = {
   auth, accounts, transactions, transfers, categories, budgets, goals, recurring, investments,
-  investmentValuations, investmentMovements
+  investmentValuations, investmentMovements, pacs
 };

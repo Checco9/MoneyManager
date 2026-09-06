@@ -7,15 +7,19 @@ let statsTrendChart = null;
 let statsWealthChart = null;
 let statsExpenseCatChart = null;
 let statsIncomeCatChart = null;
+let statsAllocationChart = null;
+let statsAssetClassChart = null;
 
 async function initStatisticsPage() {
   try {
     const month = currentMonthStr();
-    const [trend, wealth, expenseCat, incomeCat] = await Promise.all([
+    const [trend, wealth, expenseCat, incomeCat, allocation, assetClassAllocation] = await Promise.all([
       calc.computeMonthlyTrend(12),
       calc.computeWealthOverTime(12),
       calc.computeCategoryTotals(month, 'expense'),
-      calc.computeCategoryTotals(month, 'income')
+      calc.computeCategoryTotals(month, 'income'),
+      calc.computeWealthAllocation(),
+      calc.computeInvestmentAllocationByAssetClass()
     ]);
 
     renderInsights(trend, expenseCat);
@@ -28,9 +32,26 @@ async function initStatisticsPage() {
     try { renderWealthChart(wealth); } catch (e) { console.warn(e); }
     try { renderCategoryChart('stats-chart-expense-cat', expenseCat, (c) => statsExpenseCatChart = c, statsExpenseCatChart); } catch (e) { console.warn(e); }
     try { renderCategoryChart('stats-chart-income-cat', incomeCat, (c) => statsIncomeCatChart = c, statsIncomeCatChart); } catch (e) { console.warn(e); }
+    try { renderAllocationChart(allocation); } catch (e) { console.warn(e); }
+    try { renderAssetClassChart(assetClassAllocation); } catch (e) { console.warn(e); }
   } catch (err) {
     showToast(err.message, 'error');
   }
+}
+
+function renderAllocationChart(allocation) {
+  const entries = Object.entries(allocation);
+  const data = entries.map(([label, value]) => ({ categoryId: label, categoryName: label, icon: '', amount: value }));
+  renderCategoryChart('stats-chart-allocation', data, (c) => statsAllocationChart = c, statsAllocationChart);
+}
+
+function renderAssetClassChart(allocation) {
+  const card = document.getElementById('stats-asset-class-card');
+  const entries = Object.entries(allocation);
+  card.hidden = entries.length === 0;
+  if (entries.length === 0) return;
+  const data = entries.map(([label, value]) => ({ categoryId: label, categoryName: label, icon: '', amount: value }));
+  renderCategoryChart('stats-chart-asset-class', data, (c) => statsAssetClassChart = c, statsAssetClassChart);
 }
 
 function renderTrendChart(trend) {
@@ -74,7 +95,7 @@ function renderCategoryChart(canvasId, data, setter, existing) {
 
   const chart = new Chart(ctx, {
     type: 'pie',
-    data: { labels: data.map((c) => `${c.icon} ${c.categoryName}`), datasets: [{ data: data.map((c) => c.amount / 100) }] },
+    data: { labels: data.map((c) => `${c.icon} ${c.categoryName}`.trim()), datasets: [{ data: data.map((c) => c.amount / 100) }] },
     options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
   });
   setter(chart);

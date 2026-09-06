@@ -136,7 +136,60 @@ async function computeBudgetStatus(monthStr) {
   });
 }
 
+/**
+ * Allocazione del patrimonio per "contenitore": ogni conto per tipo
+ * (Contanti, Poste, ecc.) più un'unica voce "Investimenti" aggregata.
+ * Riusa computeWealthBreakdown, già esistente, invece di ricalcolare i
+ * saldi da zero.
+ */
+async function computeWealthAllocation() {
+  const breakdown = await computeWealthBreakdown();
+  const byType = {};
+  for (const a of breakdown.accounts) {
+    if (a.currentBalance <= 0) continue;
+    const label = ACCOUNT_TYPE_LABELS[a.type] || a.type;
+    byType[label] = (byType[label] || 0) + a.currentBalance;
+  }
+  if (breakdown.investments > 0) byType['Investimenti'] = breakdown.investments;
+  return byType;
+}
+
+const ACCOUNT_TYPE_LABELS = {
+  contanti: 'Contanti', conto_corrente: 'Conto corrente', carta: 'Carta',
+  poste: 'Poste', postepay: 'Postepay', paypal: 'PayPal',
+  investimenti: 'Investimenti', altro: 'Altro'
+};
+
+// Raggruppamento in "asset class" più ampie, utile per capire l'esposizione
+// complessiva a azionario/obbligazionario a colpo d'occhio, indipendentemente
+// dallo strumento specifico usato per ottenerla.
+const ASSET_CLASS_MAP = {
+  ETF: 'Azionario', Azioni: 'Azionario',
+  Obbligazioni: 'Obbligazionario', BTP: 'Obbligazionario', BOT: 'Obbligazionario',
+  'Conto Deposito': 'Liquidità',
+  Fondo: 'Altro', Polizza: 'Altro', Altro: 'Altro'
+};
+
+/**
+ * Composizione degli investimenti per asset class. Usa il valore
+ * "effettivo" di ciascun investimento (ultima rilevazione se presente,
+ * altrimenti il campo statico) — la stessa funzione già usata per il
+ * patrimonio totale, nessun calcolo nuovo duplicato.
+ */
+async function computeInvestmentAllocationByAssetClass() {
+  const list = await db.investments.list();
+  const byClass = {};
+  for (const inv of list) {
+    const value = await investmentCalc.getEffectiveValue(inv.id, inv.currentValue);
+    if (value <= 0) continue;
+    const cls = ASSET_CLASS_MAP[inv.type] || 'Altro';
+    byClass[cls] = (byClass[cls] || 0) + value;
+  }
+  return byClass;
+}
+
 window.calc = {
   monthBounds, computeAccountBalance, computeAllAccountsWithBalance, computeWealthBreakdown,
-  computeMonthSummary, computeCategoryTotals, computeMonthlyTrend, computeWealthOverTime, computeBudgetStatus
+  computeMonthSummary, computeCategoryTotals, computeMonthlyTrend, computeWealthOverTime, computeBudgetStatus,
+  computeWealthAllocation, computeInvestmentAllocationByAssetClass
 };

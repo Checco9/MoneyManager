@@ -37,11 +37,16 @@ function renderGoals(list) {
   empty.hidden = true;
 
   grid.innerHTML = list
-    .map((g) => `
+    .map((g) => {
+      const linkedAccount = g.linkedAccountId ? goalsAccountsCache.find((a) => a.id === g.linkedAccountId) : null;
+      return `
       <div class="summary-card goal-card">
         <div class="budget-card-header">
           <span>${g.icon} ${escapeHtml(g.name)}</span>
-          <button class="btn-icon" title="Elimina" onclick="askDeleteGoal('${g.id}')">🗑️</button>
+          <span>
+            <button class="btn-icon" title="Modifica" onclick="openEditGoal('${g.id}')">✏️</button>
+            <button class="btn-icon" title="Elimina" onclick="askDeleteGoal('${g.id}')">🗑️</button>
+          </span>
         </div>
         <div class="progress-bar"><div class="progress-fill progress-ok" style="width:${g.percentage}%"></div></div>
         <div class="budget-card-numbers">
@@ -49,12 +54,14 @@ function renderGoals(list) {
           <span><strong>${g.percentage}%</strong></span>
         </div>
         ${g.targetDate ? `<div class="muted-text">Entro il ${formatDate(g.targetDate)}</div>` : ''}
+        ${linkedAccount ? `<div class="muted-text">Conto dedicato: ${linkedAccount.icon || ''} ${escapeHtml(linkedAccount.name)}</div>` : ''}
         ${g.description ? `<div class="muted-text">${escapeHtml(g.description)}</div>` : ''}
         <div class="goal-actions">
           <button class="btn btn-secondary btn-small" onclick="openGoalContribute('${g.id}','add')">+ Aggiungi</button>
           <button class="btn btn-secondary btn-small" onclick="openGoalContribute('${g.id}','remove')">− Preleva</button>
         </div>
-      </div>`)
+      </div>`;
+    })
     .join('');
 }
 
@@ -62,7 +69,29 @@ function openNewGoal() {
   document.getElementById('goal-modal-title').textContent = 'Nuovo obiettivo';
   document.getElementById('goal-form').reset();
   document.getElementById('goal-id').value = '';
+  populateSelect(document.getElementById('goal-linked-account'), goalsAccountsCache, {
+    placeholder: 'Nessuno in particolare', labelFn: (a) => `${a.icon || ''} ${a.name}`
+  });
   openModal('goal-modal');
+}
+
+function openEditGoal(id) {
+  db.goals.list().then((list) => {
+    const g = list.find((x) => x.id === id);
+    if (!g) return;
+    document.getElementById('goal-modal-title').textContent = 'Modifica obiettivo';
+    document.getElementById('goal-id').value = g.id;
+    document.getElementById('goal-name').value = g.name;
+    document.getElementById('goal-target').value = (g.targetAmount / 100).toFixed(2);
+    document.getElementById('goal-date').value = g.targetDate || '';
+    document.getElementById('goal-icon').value = g.icon || '';
+    document.getElementById('goal-description').value = g.description || '';
+    populateSelect(document.getElementById('goal-linked-account'), goalsAccountsCache, {
+      placeholder: 'Nessuno in particolare', labelFn: (a) => `${a.icon || ''} ${a.name}`
+    });
+    document.getElementById('goal-linked-account').value = g.linkedAccountId || '';
+    openModal('goal-modal');
+  }).catch((err) => showToast(err.message, 'error'));
 }
 
 function askDeleteGoal(id) {
@@ -97,16 +126,23 @@ function bindGoalsPageEvents() {
 
   document.getElementById('goal-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const id = document.getElementById('goal-id').value;
     const payload = {
       name: document.getElementById('goal-name').value,
       targetAmount: eurosToCents(document.getElementById('goal-target').value),
       targetDate: document.getElementById('goal-date').value || null,
       icon: document.getElementById('goal-icon').value || '🎯',
-      description: document.getElementById('goal-description').value
+      description: document.getElementById('goal-description').value,
+      linkedAccountId: document.getElementById('goal-linked-account').value || null
     };
     try {
-      await db.goals.create(payload);
-      showToast('Obiettivo creato.', 'success');
+      if (id) {
+        await db.goals.update(id, payload);
+        showToast('Obiettivo aggiornato.', 'success');
+      } else {
+        await db.goals.create(payload);
+        showToast('Obiettivo creato.', 'success');
+      }
       closeModal('goal-modal');
       loadGoals();
     } catch (err) {
@@ -135,5 +171,6 @@ function bindGoalsPageEvents() {
 }
 
 window.initGoalsPage = initGoalsPage;
+window.openEditGoal = openEditGoal;
 window.askDeleteGoal = askDeleteGoal;
 window.openGoalContribute = openGoalContribute;
