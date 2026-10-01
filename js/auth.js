@@ -63,6 +63,7 @@ function showApp(session) {
 }
 
 async function startApp() {
+  await seedDefaultCategoriesIfNeeded();
   handleHashChange();
   // Non generiamo più in automatico e senza avviso: chiediamo conferma
   // se ci sono movimenti ricorrenti o versamenti PAC scaduti da registrare.
