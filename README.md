@@ -86,7 +86,37 @@ aggiunge solo le nuove tabelle/colonne necessarie.
 
 Migrazioni finora create:
 - `sql/migration-every-n.sql` — opzione "ogni X" per i movimenti ricorrenti
-- `sql/migration-investment-tracking.sql` — storico rilevazioni e movimenti per gli investimenti (vedi sotto)
+- `sql/migration-investment-tracking.sql` — storico rilevazioni e movimenti per gli investimenti
+- `sql/migration-portfolio-fase1.sql` — campi ETF/azioni (ticker, ISIN, quantità, broker) e dividendi
+- `sql/migration-pac.sql` — sistema PAC
+- `sql/migration-multiuser.sql` — **account separati** (vedi sezione dedicata sotto, richiede un passaggio manuale)
+
+## Migrazione ad account separati
+
+Questa migrazione cambia il modello dei dati: prima tu e la tua ragazza vedevate
+sempre le stesse cose, ora ognuno vede solo i propri conti e movimenti.
+A differenza delle altre migrazioni, **richiede una modifica manuale** prima di
+eseguirla:
+
+1. Apri `sql/migration-multiuser.sql`
+2. Cerca la riga con `CAMBIA-CON-LA-TUA-EMAIL@esempio.it` e sostituiscila con
+   l'email dell'account che deve **ricevere** tutti i dati esistenti (di
+   solito la tua, visto che probabilmente sei tu ad aver creato tutto finora)
+3. Esegui lo script su Supabase come al solito
+
+Cosa succede dopo:
+- Il tuo account continuerà a vedere tutto quello che hai già inserito
+- L'altro account (la tua ragazza) **ripartirà da zero**: nessun conto,
+  nessuna transazione — ma con le categorie di base già pronte (create
+  automaticamente al primo login dopo la migrazione)
+- Se in futuro vorrete tornare a condividere tutto, ditemelo: si può
+  fare, ma è un cambiamento diverso da spiegare a parte
+
+**Ho testato questa migrazione su un database Postgres reale** (non solo
+letto il codice) prima di consegnartela: ho verificato che un'email
+sbagliata blocca tutto senza modificare nulla, che i dati esistenti vengono
+assegnati correttamente, e soprattutto che un utente davvero non veda i
+dati dell'altro (non solo che l'interfaccia li nasconda).
 
 ## Note importanti
 
